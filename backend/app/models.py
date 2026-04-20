@@ -161,6 +161,8 @@ class LearningPlan(Base):
     raw_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="draft")
     source_ai: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+    # LLM 从原文抽到的每日可投入小时(激活时同步到 user.daily_hours)
+    daily_hours: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
 
     # 5 个 Section 存为 JSON
     phases_data: Mapped[list] = mapped_column(JSON, default=list)

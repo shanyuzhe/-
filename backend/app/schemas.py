@@ -27,7 +27,7 @@ class GeneratedTask(BaseModel):
     module: Module
     title: str = Field(..., max_length=200)
     description: str = Field(..., max_length=2000)
-    estimated_minutes: int = Field(..., ge=10, le=120)
+    estimated_minutes: int = Field(..., ge=10, le=240)
     rationale_brief: str = Field(
         ..., max_length=200,
         description="一句话为什么这一刻选这个任务,帮助用户理解 AI 决策"
@@ -153,6 +153,9 @@ class ExtractedPlan(BaseModel):
     """DeepSeek 从 raw_text 提取的完整结构化规划(泛学科)"""
 
     subject: str = ""  # 必须由 LLM 从原文判断,不再默认 ielts
+    # 每日可投入小时数(从原文 "每日可投入 / 每日总计" 等处抽取,取区间中位数)
+    # 激活 plan 时会同步到 user.daily_hours,V3 生成任务按这个时长排
+    daily_hours: float | None = None
     phases: list[PhaseData] = Field(default_factory=list)
     resources: list[Resource] = Field(default_factory=list)
     daily_habits: list[DailyHabit] = Field(default_factory=list)
@@ -184,6 +187,7 @@ class PlanOut(BaseModel):
     subject: str
     status: str
     source_ai: Optional[str] = None
+    daily_hours: Optional[float] = None
     phases_data: list
     resources: list
     daily_habits: list

@@ -96,6 +96,7 @@ export interface Checkpoint {
 
 export interface ExtractedPlan {
   subject: string
+  daily_hours?: number | null
   phases: PhaseData[]
   resources: Resource[]
   daily_habits: DailyHabit[]
@@ -123,6 +124,7 @@ export interface PlanOut {
   subject: string
   status: string
   source_ai?: string | null
+  daily_hours?: number | null
   phases_data: PhaseData[]
   resources: Resource[]
   daily_habits: DailyHabit[]

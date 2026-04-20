@@ -54,6 +54,7 @@ def import_plan(req: PlanImportRequest, db: Session = Depends(get_db)):
         raw_text=req.raw_text,
         source_ai=req.source_ai,
         status="draft",
+        daily_hours=extracted.daily_hours,
         phases_data=[p.model_dump() for p in extracted.phases],
         resources=[r.model_dump() for r in extracted.resources],
         daily_habits=[h.model_dump() for h in extracted.daily_habits],
@@ -103,6 +104,11 @@ def activate_plan(plan_id: int, db: Session = Depends(get_db)):
 
     plan.status = "active"
     plan.activated_at = datetime.now()
+
+    # 同步 plan 的 daily_hours 到 user.daily_hours
+    # 这样 V3 生成每日任务时会按 plan 要求的时长排任务量,不再用 seed 默认值
+    if plan.daily_hours is not None:
+        user.daily_hours = plan.daily_hours
 
     # 替换 phases
     goal = db.query(Goal).filter(Goal.user_id == user.id).first()

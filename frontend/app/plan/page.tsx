@@ -284,8 +284,20 @@ function PlanDetail({ plan }: { plan: PlanOut }) {
 // ============ Visual Overview(时间线 + 当前阶段)============
 
 function PlanOverview({ plan }: { plan: PlanOut }) {
+  // Bug 2 修:过滤掉 start_date / end_date 不是合法 YYYY-MM-DD 的阶段
+  // 否则 NaN 宽度会让所有 bar 叠成一堆(408 的"考试前"阶段就是这坑)
+  const isValidDate = (s: string) => {
+    const d = new Date(`${s}T00:00:00Z`)
+    return !isNaN(d.getTime()) && /^\d{4}-\d{2}-\d{2}$/.test(s)
+  }
   const phases = [...plan.phases_data]
-    .filter((p) => p.start_date && p.end_date)
+    .filter(
+      (p) =>
+        p.start_date &&
+        p.end_date &&
+        isValidDate(p.start_date) &&
+        isValidDate(p.end_date)
+    )
     .sort((a, b) => a.start_date.localeCompare(b.start_date))
 
   if (phases.length === 0) {

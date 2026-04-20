@@ -15,7 +15,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.llm import extract_learning_plan
-from app.models import Goal, LearningPlan, Phase, User
+from app.models import Goal, LearningPlan, Phase, Task, User
 from app.schemas import (
     PlanImportRequest,
     PlanImportResponse,
@@ -133,6 +133,14 @@ def activate_plan(plan_id: int, db: Session = Depends(get_db)):
                     target_tasks=0,
                 )
             )
+
+    # Bug 1 修:激活新 plan 后清理当日 pending 任务
+    # 否则 /today 接口幂等缓存,用户看到的仍是旧 plan 生成的任务
+    db.query(Task).filter(
+        Task.user_id == user.id,
+        Task.date == date.today(),
+        Task.status == "pending",
+    ).delete()
 
     db.commit()
     db.refresh(plan)

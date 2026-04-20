@@ -12,8 +12,16 @@ import type {
   TodayResponse,
 } from "./types"
 
+/**
+ * API base 智能切换:
+ * - Server Component(Node 进程):直连 http://127.0.0.1:8000
+ * - Client Component(浏览器):走 Next.js 代理 /api/proxy/*
+ *   避免 Windows Clash 系统代理 hook 浏览器 127.0.0.1 请求
+ */
 const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000"
+  typeof window === "undefined"
+    ? process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000"
+    : "/api/proxy"
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {

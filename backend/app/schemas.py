@@ -11,7 +11,9 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
 
-Module = Literal["listening", "speaking", "reading", "writing"]
+# v0.1 Plus-dialog:module 放开为任意字符串,支持雅思以外的学科
+# 前端 MODULE_LABEL 作为已知翻译 fallback,未知直接显示原文
+Module = str
 TaskStatus = Literal["pending", "done", "skipped", "swapped"]
 
 

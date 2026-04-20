@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 from pathlib import Path
 from typing import Any
 
@@ -62,32 +63,51 @@ def _call_with_retry(
     max_tokens: int,
     schema_cls: type,
     retries: int = 2,
+    timeout: float = 60.0,
+    json_mode: bool = True,
 ) -> Any:
-    """调 LLM + JSON 模式 + pydantic 校验 + retry"""
+    """调 LLM + pydantic 校验 + retry
+
+    - json_mode=True:用 OpenAI 的 response_format=json_object(V3 友好)
+    - json_mode=False:不强制 JSON 模式,prompt 里要求输出 JSON,
+      后端用 regex 提取第一个 {...} 块。R1 专用(R1 的 JSON mode 有 empty content bug)。
+    """
     client = get_client()
     last_error: Exception | None = None
 
     for attempt in range(retries + 1):
         try:
-            resp = client.chat.completions.create(
+            create_kwargs: dict[str, Any] = dict(
                 model=model,
                 messages=[
                     {"role": "system", "content": system},
                     {"role": "user", "content": user},
                 ],
                 max_tokens=max_tokens,
-                response_format={"type": "json_object"},
                 temperature=0.3,
+                timeout=timeout,
             )
+            if json_mode:
+                create_kwargs["response_format"] = {"type": "json_object"}
+            resp = client.chat.completions.create(**create_kwargs)
             content = resp.choices[0].message.content
             if not content:
                 raise ValueError("empty LLM response")
-            data = json.loads(content)
+
+            # R1 风格:content 可能含 markdown 代码块或前后闲聊
+            # 提取第一个 {...} 块,DOTALL 让 . 匹配换行
+            m = re.search(r"\{.*\}", content, re.DOTALL)
+            json_str = m.group(0) if m else content
+
+            data = json.loads(json_str)
             return schema_cls.model_validate(data)
         except (json.JSONDecodeError, ValidationError, ValueError) as e:
             last_error = e
             logger.warning(
-                "LLM attempt %d/%d failed: %s", attempt + 1, retries + 1, e
+                "LLM attempt %d/%d failed: %s",
+                attempt + 1,
+                retries + 1,
+                e,
             )
             continue
 
@@ -192,11 +212,16 @@ def extract_learning_plan(raw_text: str) -> ExtractedPlan:
 
     try:
         return _call_with_retry(
-            model=settings.MODEL_DEEP,
+            # V3(deepseek-chat):实测 90-100 秒,解析质量足够
+            # R1 要 210+ 秒,边际精度差距不值得 2x 等待
+            model=settings.MODEL_FAST,
             system=system_prompt,
             user=user_prompt,
             max_tokens=4000,
             schema_cls=ExtractedPlan,
+            timeout=120.0,
+            retries=1,
+            json_mode=True,  # V3 的 JSON mode 工作正常
         )
     except RuntimeError:
         logger.warning("plan extraction 失败,降级到 mock")

@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import {
@@ -53,7 +53,33 @@ export default function OnboardingPage() {
   const [extracted, setExtracted] = useState<ExtractedPlan | null>(null)
   const [warnings, setWarnings] = useState<string[]>([])
   const [parsing, setParsing] = useState(false)
+  const [elapsed, setElapsed] = useState(0)
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
   const [activating, setActivating] = useState(false)
+
+  // 解析时:秒数计时器 + 滚动状态文字
+  useEffect(() => {
+    if (parsing) {
+      setElapsed(0)
+      timerRef.current = setInterval(() => setElapsed((n) => n + 1), 1000)
+    } else if (timerRef.current) {
+      clearInterval(timerRef.current)
+      timerRef.current = null
+    }
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current)
+    }
+  }, [parsing])
+
+  function getParsingStatus(sec: number): string {
+    if (sec < 3) return "连接 DeepSeek R1..."
+    if (sec < 15) return "R1 正在分析你的规划结构..."
+    if (sec < 40) return "识别阶段 / 资源 / habit / 自检节点..."
+    if (sec < 80) return "R1 还在深度思考(你这份规划挺丰富)..."
+    if (sec < 150) return "马上好了,整理 JSON 输出..."
+    if (sec < 220) return "有点慢,稍等..."
+    return "即将超时,还不出就会自动 mock fallback"
+  }
 
   useEffect(() => {
     api
@@ -302,8 +328,41 @@ export default function OnboardingPage() {
             </CardContent>
           </Card>
 
+          {parsing && (
+            <Card className="bg-muted/40 border-primary/20">
+              <CardContent className="pt-6 space-y-3">
+                <div className="flex items-center gap-3">
+                  <Loader2
+                    className="w-6 h-6 animate-spin text-primary shrink-0"
+                    strokeWidth={1.75}
+                  />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">
+                      {getParsingStatus(elapsed)}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-0.5 tabular-nums">
+                      已等待 {elapsed} 秒 · 典型 30-120 秒
+                    </p>
+                  </div>
+                </div>
+                <div className="w-full h-1.5 bg-background rounded-full overflow-hidden">
+                  <div
+                    className="h-full bg-primary transition-[width] duration-500 ease-out"
+                    style={{
+                      width: `${Math.min(95, (elapsed / 120) * 95)}%`,
+                    }}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           <div className="flex justify-between">
-            <Button variant="ghost" onClick={() => setStep(1)}>
+            <Button
+              variant="ghost"
+              onClick={() => setStep(1)}
+              disabled={parsing}
+            >
               ← 上一步
             </Button>
             <Button
@@ -314,7 +373,7 @@ export default function OnboardingPage() {
               {parsing ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  解析中(DeepSeek-R1,约 30 秒)
+                  解析中...
                 </>
               ) : (
                 <>

@@ -3,7 +3,9 @@
  * 后端字段变更时同步改这个文件。
  */
 
-export type Module = "listening" | "speaking" | "reading" | "writing"
+// module 不再限定雅思四模块,允许任意学科字符串
+// MODULE_LABEL 映射常见中文名,未知 module 直接显示原文
+export type Module = string
 export type TaskStatus = "pending" | "done" | "skipped" | "swapped"
 
 // ============ Today / Task / Feedback / Progress ============

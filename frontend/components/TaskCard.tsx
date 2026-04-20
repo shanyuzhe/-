@@ -6,7 +6,8 @@ import { ModuleIcon } from "./ModuleIcon"
 import { TaskFeedbackDialog } from "./TaskFeedbackDialog"
 import type { TaskOut, Module } from "@/lib/types"
 
-const MODULE_LABEL: Record<Module, string> = {
+// 已知 module 翻译;未知(其他学科)的直接显示原文
+const MODULE_LABEL: Record<string, string> = {
   listening: "听力",
   speaking: "口语",
   reading: "阅读",
@@ -36,7 +37,7 @@ export function TaskCard({ task }: { task: TaskOut }) {
                 variant="secondary"
                 className="text-xs font-normal"
               >
-                {MODULE_LABEL[task.module]}
+                {MODULE_LABEL[task.module] ?? task.module}
               </Badge>
               <span className="text-xs text-muted-foreground">
                 {task.estimated_minutes} 分钟

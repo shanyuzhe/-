@@ -92,10 +92,8 @@ class Task(Base):
             "status IN ('pending', 'done', 'skipped', 'swapped')",
             name="ck_task_status",
         ),
-        CheckConstraint(
-            "module IN ('listening', 'speaking', 'reading', 'writing')",
-            name="ck_task_module",
-        ),
+        # module 不再限定雅思四模块,允许任意学科自定义(Python: algorithm, 日语: kanji 等)
+        # 由前端 MODULE_LABEL 做已知翻译 fallback
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)

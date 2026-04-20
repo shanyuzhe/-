@@ -2,16 +2,26 @@ import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { api } from "@/lib/api"
 import { Separator } from "@/components/ui/separator"
-import type { Module } from "@/lib/types"
 
-const MODULE_LABEL: Record<Module, string> = {
+// 已知 module 翻译;未知的保持原文(支持 408/日语/编程等学科自定义)
+const MODULE_LABEL: Record<string, string> = {
   listening: "听力",
   speaking: "口语",
   reading: "阅读",
   writing: "写作",
 }
 
-function Bar({ pct, tone = "primary" }: { pct: number; tone?: "primary" | "foreground" }) {
+function translateModule(m: string): string {
+  return MODULE_LABEL[m] ?? m
+}
+
+function Bar({
+  pct,
+  tone = "primary",
+}: {
+  pct: number
+  tone?: "primary" | "foreground"
+}) {
   const w = Math.max(0, Math.min(1, pct)) * 100
   const toneCls = tone === "primary" ? "bg-primary" : "bg-foreground/40"
   return (
@@ -39,6 +49,9 @@ export default async function ProgressPage() {
     )
   }
 
+  // 把 dict 转成稳定顺序的 entries
+  const moduleEntries = Object.entries(p.module_distribution)
+
   return (
     <main className="mx-auto max-w-3xl px-6 py-12">
       <nav className="mb-8">
@@ -58,7 +71,7 @@ export default async function ProgressPage() {
       <div className="space-y-10">
         {/* 倒计时 */}
         <section>
-          <p className="text-sm text-muted-foreground mb-2">距雅思考试</p>
+          <p className="text-sm text-muted-foreground mb-2">距考试</p>
           <p className="font-serif text-7xl font-medium tabular-nums tracking-tight">
             {p.days_to_exam}
             <span className="text-2xl text-muted-foreground font-normal ml-3">
@@ -104,31 +117,44 @@ export default async function ProgressPage() {
 
         <Separator />
 
-        {/* 四模块分布 */}
+        {/* 模块分布(动态 · 根据当前 plan 的 focus_modules)*/}
         <section>
-          <p className="text-sm text-muted-foreground mb-4">本周时长分布</p>
-          <div className="space-y-4">
-            {(
-              ["listening", "speaking", "reading", "writing"] as const
-            ).map((m) => (
-              <div key={m} className="space-y-1.5">
-                <div className="flex justify-between text-sm">
-                  <span>{MODULE_LABEL[m]}</span>
-                  <span className="text-muted-foreground tabular-nums">
-                    {Math.round(p.module_distribution[m] * 100)}%
-                  </span>
-                </div>
-                <Bar pct={p.module_distribution[m]} tone="foreground" />
-              </div>
-            ))}
+          <div className="flex justify-between items-baseline mb-4">
+            <p className="text-sm text-muted-foreground">本周时长分布</p>
+            {moduleEntries.length > 0 && (
+              <p className="text-xs text-muted-foreground tabular-nums">
+                共 {moduleEntries.length} 个模块
+              </p>
+            )}
           </div>
+          {moduleEntries.length === 0 ? (
+            <p className="text-sm text-muted-foreground italic">
+              本周还没有完成的任务,完成一些任务后这里会显示各模块时长占比。
+            </p>
+          ) : (
+            <div className="space-y-3">
+              {moduleEntries.map(([m, pct]) => (
+                <div key={m} className="space-y-1.5">
+                  <div className="flex justify-between text-sm">
+                    <span>{translateModule(m)}</span>
+                    <span className="text-muted-foreground tabular-nums">
+                      {Math.round(pct * 100)}%
+                    </span>
+                  </div>
+                  <Bar pct={pct} tone="foreground" />
+                </div>
+              ))}
+            </div>
+          )}
         </section>
 
         {p.latest_summary && (
           <>
             <Separator />
             <section>
-              <p className="text-sm text-muted-foreground mb-3">最新周度观察</p>
+              <p className="text-sm text-muted-foreground mb-3">
+                最新周度观察
+              </p>
               <blockquote className="font-serif text-lg leading-relaxed border-l-2 border-primary pl-4 italic">
                 {p.latest_summary}
               </blockquote>

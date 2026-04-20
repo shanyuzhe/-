@@ -49,12 +49,8 @@ export interface FeedbackResponse {
   feeling: number | null
 }
 
-export interface ModuleDistribution {
-  listening: number
-  speaking: number
-  reading: number
-  writing: number
-}
+// 动态 module 占比:key = 当前 plan 的 focus_modules(中文),value = 本周时长占比
+export type ModuleDistribution = Record<string, number>
 
 export interface ProgressResponse {
   days_to_exam: number

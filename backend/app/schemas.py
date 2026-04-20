@@ -92,13 +92,6 @@ class FeedbackRequest(BaseModel):
     note: Optional[str] = Field(None, max_length=500)
 
 
-class ModuleDistribution(BaseModel):
-    listening: float = 0.0
-    speaking: float = 0.0
-    reading: float = 0.0
-    writing: float = 0.0
-
-
 class ProgressResponse(BaseModel):
     """进度页响应"""
 
@@ -106,7 +99,9 @@ class ProgressResponse(BaseModel):
     current_phase: str
     phase_progress: float = Field(..., ge=0, le=1)
     weekly_completion_rate: float = Field(..., ge=0, le=1)
-    module_distribution: ModuleDistribution
+    # 动态 module 分布:key 为当前 plan 的 focus_modules(中文),value 为本周时长占比
+    # 没完成任务的 module 也会出现在 key 里,value=0
+    module_distribution: dict[str, float] = Field(default_factory=dict)
     avg_feeling: float = Field(..., ge=0, le=5)
     latest_summary: Optional[str] = None
 

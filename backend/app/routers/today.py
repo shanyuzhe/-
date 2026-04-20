@@ -40,15 +40,25 @@ def get_today(
     if not goal:
         raise HTTPException(404, "无 goal,请跑 seed")
 
-    phase = (
-        db.query(Phase)
+    # 查 active plan,phase 查询加防御性 plan_id filter 避免历史 orphan
+    active_plan = (
+        db.query(LearningPlan)
         .filter(
-            Phase.goal_id == goal.id,
-            Phase.start_date <= today,
-            Phase.end_date >= today,
+            LearningPlan.user_id == user.id,
+            LearningPlan.status == "active",
         )
+        .order_by(LearningPlan.activated_at.desc().nullslast())
         .first()
     )
+
+    phase_q = db.query(Phase).filter(
+        Phase.goal_id == goal.id,
+        Phase.start_date <= today,
+        Phase.end_date >= today,
+    )
+    if active_plan:
+        phase_q = phase_q.filter(Phase.plan_id == active_plan.id)
+    phase = phase_q.first()
     if not phase:
         raise HTTPException(404, f"{today} 不在任何阶段内,请检查 phase seed")
 

@@ -107,13 +107,9 @@ def activate_plan(plan_id: int, db: Session = Depends(get_db)):
     # 替换 phases
     goal = db.query(Goal).filter(Goal.user_id == user.id).first()
     if goal and plan.phases_data:
-        # 删硬编码 phases(plan_id IS NULL 的)
-        db.query(Phase).filter(
-            Phase.goal_id == goal.id,
-            Phase.plan_id.is_(None),
-        ).delete()
-        # 幂等:删本 plan 旧 phases
-        db.query(Phase).filter(Phase.plan_id == plan.id).delete()
+        # 删 goal 下所有 phase(硬编码 + 其他 archived plan 残留 + 自己旧的)
+        # 保证 phase 表里只剩当前 active plan 的数据,不会被历史污染
+        db.query(Phase).filter(Phase.goal_id == goal.id).delete()
 
         # 插入新 phases
         for pd in plan.phases_data:

@@ -60,7 +60,7 @@
 {{
   "tasks": [
     {{
-      "module": "listening" | "speaking" | "reading" | "writing",
+      "module": string,  // 中文子能力名,必须是当前阶段 focus_modules 中的一个(如"听力"/"高数"/"数据结构"/"翻译")
       "title": "简短标题(≤200 字)",
       "description": "具体做什么,含材料建议、目标数量(≤2000 字)",
       "estimated_minutes": 10-120 整数,
@@ -69,3 +69,5 @@
   ]
 }}
 ```
+
+**module 命名规则**:严格从 learning_plan 的 `focus_modules` 里挑一个中文名,**不要使用英文**(如 "listening"),也不要发明新名称。

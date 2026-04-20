@@ -41,6 +41,51 @@ _client: OpenAI | None = None
 PROMPTS_DIR = Path(__file__).resolve().parent.parent.parent / "prompts"
 
 
+# 常见英文 module key → 中文 fallback(LLM 固执保留英文时兜底)
+# 未命中的保持原文显示(前端还会再做 fallback)
+_MODULE_CN_MAP: dict[str, str] = {
+    # 雅思
+    "listening": "听力", "speaking": "口语",
+    "reading": "阅读", "writing": "写作",
+    # 考研数学 / 408
+    "math_calculus": "高数", "calculus": "高数",
+    "math_linear_algebra": "线代", "linear_algebra": "线代",
+    "math_prob": "概率统计", "probability": "概率统计",
+    "math_strengthen": "数学强化",
+    "math_exam": "数学真题", "math_mock": "数学模考",
+    "co": "组成原理", "computer_organization": "组成原理",
+    "ds": "数据结构", "data_structure": "数据结构",
+    "os": "操作系统", "operating_system": "操作系统",
+    "cn": "计网", "computer_network": "计网",
+    "408_exam": "408真题", "408_mock": "408模考",
+    # 考研英语
+    "vocab": "词汇", "vocabulary": "词汇",
+    "translation": "翻译",
+    # 考研政治
+    "politics_core": "政治核心",
+    "politics_drill": "政治刷题",
+    "politics_final": "政治冲刺",
+    "politics": "政治",
+    # 编程
+    "algorithm": "算法", "system_design": "系统设计",
+    "debugging": "调试", "testing": "测试",
+    # 日语
+    "grammar": "语法", "kanji": "汉字",
+    # 杂项
+    "review_only": "复习", "exam_rhythm": "考试节奏",
+    # CFA
+    "ethics": "职业伦理", "quant": "数量",
+    "financial_reporting": "财务报表", "equity": "权益",
+}
+
+
+def _cn_module(m: str) -> str:
+    """英文 module key → 中文 fallback。未命中保持原样"""
+    if not m:
+        return m
+    return _MODULE_CN_MAP.get(m.strip().lower(), m)
+
+
 def get_client() -> OpenAI:
     """懒初始化 DeepSeek 客户端(OpenAI 兼容 SDK)"""
     global _client
@@ -139,7 +184,7 @@ def generate_today_tasks(context: dict) -> GeneratedTasksList:
         return _mock_tasks(context)
 
     try:
-        return _call_with_retry(
+        result = _call_with_retry(
             model=settings.MODEL_FAST,
             system=system_prompt,
             user=user_prompt,
@@ -149,6 +194,11 @@ def generate_today_tasks(context: dict) -> GeneratedTasksList:
     except RuntimeError:
         logger.warning("LLM 彻底失败,降级到 mock")
         return _mock_tasks(context)
+
+    # 后处理:task.module 英文 → 中文 fallback,与 plan.focus_modules 一致
+    for t in result.tasks:
+        t.module = _cn_module(t.module)
+    return result
 
 
 # =============================================================
@@ -211,9 +261,7 @@ def extract_learning_plan(raw_text: str) -> ExtractedPlan:
         return _mock_extracted_plan()
 
     try:
-        return _call_with_retry(
-            # V3(deepseek-chat):实测 90-100 秒,解析质量足够
-            # R1 要 210+ 秒,边际精度差距不值得 2x 等待
+        extracted = _call_with_retry(
             model=settings.MODEL_FAST,
             system=system_prompt,
             user=user_prompt,
@@ -221,11 +269,16 @@ def extract_learning_plan(raw_text: str) -> ExtractedPlan:
             schema_cls=ExtractedPlan,
             timeout=120.0,
             retries=1,
-            json_mode=True,  # V3 的 JSON mode 工作正常
+            json_mode=True,
         )
     except RuntimeError:
         logger.warning("plan extraction 失败,降级到 mock")
         return _mock_extracted_plan()
+
+    # 后处理:V3 固执保留英文原文,对 focus_modules 做中文 fallback 映射
+    for phase in extracted.phases:
+        phase.focus_modules = [_cn_module(m) for m in phase.focus_modules]
+    return extracted
 
 
 # =============================================================

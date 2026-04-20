@@ -155,9 +155,9 @@ class Checkpoint(BaseModel):
 
 
 class ExtractedPlan(BaseModel):
-    """DeepSeek-R1 从 raw_text 提取的完整结构化规划"""
+    """DeepSeek 从 raw_text 提取的完整结构化规划(泛学科)"""
 
-    subject: str = "ielts"
+    subject: str = ""  # 必须由 LLM 从原文判断,不再默认 ielts
     phases: list[PhaseData] = Field(default_factory=list)
     resources: list[Resource] = Field(default_factory=list)
     daily_habits: list[DailyHabit] = Field(default_factory=list)

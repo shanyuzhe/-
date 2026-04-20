@@ -6,7 +6,7 @@
 """
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime
 from typing import Literal, Optional
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -107,3 +107,90 @@ class ProgressResponse(BaseModel):
     module_distribution: ModuleDistribution
     avg_feeling: float = Field(..., ge=0, le=5)
     latest_summary: Optional[str] = None
+
+
+# =====================================================
+# LearningPlan 导入(v0.1 Plus)
+# =====================================================
+
+
+class PhaseData(BaseModel):
+    """阶段划分(Section A 单项)"""
+
+    name: str
+    start_date: str  # YYYY-MM-DD
+    end_date: str
+    focus_modules: list[Module] = Field(default_factory=list)
+    objectives: Optional[str] = None
+
+
+class Resource(BaseModel):
+    """资源推荐(Section B)"""
+
+    name: str
+    url: Optional[str] = None
+    type: str = "other"
+    why: Optional[str] = None
+    phase: Optional[str] = None
+
+
+class DailyHabit(BaseModel):
+    """每日 habit(Section C)"""
+
+    habit: str
+    tool: Optional[str] = None
+    amount: Optional[str] = None
+    timing: Optional[str] = None
+
+
+class Checkpoint(BaseModel):
+    """自检节点(Section E)"""
+
+    date: str
+    type: str  # listening/speaking/reading/writing/mock_exam/vocab
+    material: Optional[str] = None
+    target: Optional[str] = None
+
+
+class ExtractedPlan(BaseModel):
+    """DeepSeek-R1 从 raw_text 提取的完整结构化规划"""
+
+    subject: str = "ielts"
+    phases: list[PhaseData] = Field(default_factory=list)
+    resources: list[Resource] = Field(default_factory=list)
+    daily_habits: list[DailyHabit] = Field(default_factory=list)
+    task_principles: list[str] = Field(default_factory=list)
+    checkpoints: list[Checkpoint] = Field(default_factory=list)
+
+
+class PlanImportRequest(BaseModel):
+    raw_text: str = Field(..., min_length=50, max_length=30000)
+    source_ai: Optional[str] = Field(
+        None, description="'claude'/'chatgpt'/'kimi'/'doubao'/..."
+    )
+
+
+class PlanImportResponse(BaseModel):
+    plan_id: int
+    extracted: ExtractedPlan
+    warnings: list[str] = Field(default_factory=list)
+
+
+class PlanTemplateResponse(BaseModel):
+    template: str
+
+
+class PlanOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    subject: str
+    status: str
+    source_ai: Optional[str] = None
+    phases_data: list
+    resources: list
+    daily_habits: list
+    task_principles: list
+    checkpoints: list
+    created_at: datetime
+    activated_at: Optional[datetime] = None

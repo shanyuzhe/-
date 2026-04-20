@@ -72,6 +72,9 @@ class Phase(Base):
     end_date: Mapped[date] = mapped_column(Date)
     focus_modules: Mapped[list] = mapped_column(JSON, default=list)
     target_tasks: Mapped[int] = mapped_column(Integer, default=0)
+    plan_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("learning_plan.id"), nullable=True, index=True
+    )
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     goal: Mapped["Goal"] = relationship(back_populates="phases")
@@ -147,3 +150,26 @@ class WeeklySummary(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
     user: Mapped["User"] = relationship(back_populates="summaries")
+
+
+class LearningPlan(Base):
+    """用户粘贴外部 AI 规划后的解析结果(v0.1 Plus)"""
+
+    __tablename__ = "learning_plan"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    user_id: Mapped[int] = mapped_column(ForeignKey("user.id"), index=True)
+    subject: Mapped[str] = mapped_column(String(50), default="ielts")
+    raw_text: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    status: Mapped[str] = mapped_column(String(20), default="draft")
+    source_ai: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
+
+    # 5 个 Section 存为 JSON
+    phases_data: Mapped[list] = mapped_column(JSON, default=list)
+    resources: Mapped[list] = mapped_column(JSON, default=list)
+    daily_habits: Mapped[list] = mapped_column(JSON, default=list)
+    task_principles: Mapped[list] = mapped_column(JSON, default=list)
+    checkpoints: Mapped[list] = mapped_column(JSON, default=list)
+
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
+    activated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)

@@ -6,6 +6,8 @@
 export type Module = "listening" | "speaking" | "reading" | "writing"
 export type TaskStatus = "pending" | "done" | "skipped" | "swapped"
 
+// ============ Today / Task / Feedback / Progress ============
+
 export interface TaskOut {
   id: number
   date: string // YYYY-MM-DD
@@ -60,4 +62,74 @@ export interface ProgressResponse {
   module_distribution: ModuleDistribution
   avg_feeling: number
   latest_summary: string | null
+}
+
+// ============ LearningPlan(v0.1 Plus)============
+
+export interface PhaseData {
+  name: string
+  start_date: string // YYYY-MM-DD
+  end_date: string
+  focus_modules: Module[]
+  objectives?: string | null
+}
+
+export interface Resource {
+  name: string
+  url?: string | null
+  type: string
+  why?: string | null
+  phase?: string | null
+}
+
+export interface DailyHabit {
+  habit: string
+  tool?: string | null
+  amount?: string | null
+  timing?: string | null
+}
+
+export interface Checkpoint {
+  date: string // YYYY-MM-DD
+  type: string
+  material?: string | null
+  target?: string | null
+}
+
+export interface ExtractedPlan {
+  subject: string
+  phases: PhaseData[]
+  resources: Resource[]
+  daily_habits: DailyHabit[]
+  task_principles: string[]
+  checkpoints: Checkpoint[]
+}
+
+export interface PlanImportRequest {
+  raw_text: string
+  source_ai?: string
+}
+
+export interface PlanImportResponse {
+  plan_id: number
+  extracted: ExtractedPlan
+  warnings: string[]
+}
+
+export interface PlanTemplateResponse {
+  template: string
+}
+
+export interface PlanOut {
+  id: number
+  subject: string
+  status: string
+  source_ai?: string | null
+  phases_data: PhaseData[]
+  resources: Resource[]
+  daily_habits: DailyHabit[]
+  task_principles: string[]
+  checkpoints: Checkpoint[]
+  created_at: string
+  activated_at?: string | null
 }

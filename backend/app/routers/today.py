@@ -1,4 +1,8 @@
-"""今日任务端点:幂等生成(同日缓存)+ 可强制刷新"""
+"""今日任务端点:幂等生成(同日缓存)+ 可强制刷新
+
+v0.1 Plus: 若有 active LearningPlan,prompt 里会注入 plan_context
+(原则 / habit / 当前阶段资源 / 近 14 天 checkpoint)。
+"""
 from datetime import date, datetime, timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -7,7 +11,7 @@ from sqlalchemy.orm import Session
 
 from app.db import get_db
 from app.llm import generate_today_tasks
-from app.models import Event, Goal, Phase, Task, User
+from app.models import Event, Goal, LearningPlan, Phase, Task, User
 from app.schemas import TaskOut, TodayResponse
 
 router = APIRouter(prefix="/today", tags=["today"])
@@ -15,7 +19,9 @@ router = APIRouter(prefix="/today", tags=["today"])
 
 @router.get("", response_model=TodayResponse)
 def get_today(
-    force_refresh: bool = Query(False, description="重新调 LLM 生成(默认当日缓存)"),
+    force_refresh: bool = Query(
+        False, description="重新调 LLM 生成(默认当日缓存)"
+    ),
     db: Session = Depends(get_db),
 ):
     """获取今日任务卡。
@@ -46,7 +52,6 @@ def get_today(
     if not phase:
         raise HTTPException(404, f"{today} 不在任何阶段内,请检查 phase seed")
 
-    # 当日已生成?
     existing = (
         db.query(Task)
         .filter(Task.user_id == user.id, Task.date == today)
@@ -58,7 +63,6 @@ def get_today(
         tasks = existing
     else:
         if force_refresh:
-            # 只删 pending,已完成/跳过的历史保留
             db.query(Task).filter(
                 Task.user_id == user.id,
                 Task.date == today,
@@ -100,7 +104,6 @@ def get_today(
         for t in new_tasks:
             db.refresh(t)
 
-        # 如果是强刷,合并旧已完成的
         tasks = (
             db.query(Task)
             .filter(Task.user_id == user.id, Task.date == today)
@@ -124,7 +127,7 @@ def get_today(
 def _build_today_context(
     db: Session, user: User, goal: Goal, phase: Phase, today: date
 ) -> dict:
-    """装配喂给 LLM 的上下文"""
+    """装配喂给 LLM 的上下文(含 v0.1 Plus plan_context)"""
     seven_days_ago = today - timedelta(days=7)
     recent = (
         db.query(Task)
@@ -162,6 +165,22 @@ def _build_today_context(
     else:
         now_slot = "evening"
 
+    # v0.1 Plus: 读 active learning plan,装成 plan_context
+    plan = (
+        db.query(LearningPlan)
+        .filter(
+            LearningPlan.user_id == user.id,
+            LearningPlan.status == "active",
+        )
+        .order_by(LearningPlan.activated_at.desc().nullslast())
+        .first()
+    )
+    plan_context = (
+        _format_plan_context(plan, phase, today)
+        if plan
+        else "(用户尚未导入自定义学习规划,按默认策略生成任务)"
+    )
+
     return {
         "exam_date": user.exam_date.isoformat(),
         "days_left": (user.exam_date - today).days,
@@ -177,8 +196,82 @@ def _build_today_context(
         "phase_target_tasks": phase.target_tasks,
         "phase_done_tasks": phase_done_tasks,
         "recent_tasks_text": recent_text,
-        "last_week_summary_text": "暂无",  # v0.1 先不做
+        "last_week_summary_text": "暂无",
         "today": today.isoformat(),
         "now_slot": now_slot,
         "today_hours": user.daily_hours,
+        "plan_context": plan_context,
     }
+
+
+def _format_plan_context(
+    plan: LearningPlan, phase: Phase, today: date
+) -> str:
+    """把 active plan 格式化成 prompt 里 <learning_plan> 段的内容"""
+    parts: list[str] = []
+
+    if plan.task_principles:
+        parts.append("【任务生成必须遵守的原则】")
+        for p in plan.task_principles:
+            parts.append(f"- {p}")
+
+    if plan.daily_habits:
+        parts.append("")
+        parts.append("【每天必须包含的 habit】")
+        for h in plan.daily_habits:
+            tool = h.get("tool") or ""
+            amount = h.get("amount") or ""
+            timing = h.get("timing") or ""
+            meta = " ".join(s for s in [tool, amount, timing] if s)
+            habit = h.get("habit", "")
+            parts.append(f"- {habit}" + (f" ({meta})" if meta else ""))
+
+    if plan.resources:
+        matching = [r for r in plan.resources if _resource_matches_phase(r, phase)]
+        if matching:
+            parts.append("")
+            parts.append("【当前阶段推荐资源(任务描述里优先引用这些)】")
+            for r in matching[:10]:
+                name = r.get("name", "")
+                url = r.get("url") or ""
+                rtype = r.get("type") or ""
+                why = r.get("why") or ""
+                url_part = f" ({url})" if url else ""
+                line = f"- {name}{url_part}"
+                extra = " / ".join(s for s in [rtype, why] if s)
+                if extra:
+                    line += f" — {extra}"
+                parts.append(line)
+
+    if plan.checkpoints:
+        soon: list[tuple[date, dict]] = []
+        for c in plan.checkpoints:
+            raw = c.get("date") or ""
+            try:
+                cdate = date.fromisoformat(raw)
+            except (ValueError, TypeError):
+                continue
+            delta = (cdate - today).days
+            if 0 <= delta <= 14:
+                soon.append((cdate, c))
+        if soon:
+            soon.sort(key=lambda x: x[0])
+            parts.append("")
+            parts.append("【近 14 天 checkpoint(任务里可提醒用户准备)】")
+            for cdate, c in soon:
+                ctype = c.get("type") or ""
+                material = c.get("material") or ""
+                target = c.get("target") or ""
+                meta = " · ".join(s for s in [material, target] if s)
+                parts.append(f"- {cdate} [{ctype}]" + (f" {meta}" if meta else ""))
+
+    return "\n".join(parts) if parts else "(plan 已激活但各 Section 为空)"
+
+
+def _resource_matches_phase(resource: dict, phase: Phase) -> bool:
+    """资源是否属于当前阶段(简单启发式)"""
+    rphase = (resource.get("phase") or "").strip()
+    if not rphase or rphase.lower() in ("all", "任何", "全部"):
+        return True
+    # 名字互含即认为匹配
+    return rphase in phase.name or phase.name in rphase

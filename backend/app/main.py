@@ -9,12 +9,12 @@ from fastapi import FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
 from app.config import settings  # noqa: E402
-from app.routers import feedback, progress, today  # noqa: E402
+from app.routers import feedback, plan, progress, today  # noqa: E402
 
 app = FastAPI(
     title="CCO — 决策外包学习助手",
-    description="雅思备考认知执行官(v0.1 单用户版)",
-    version="0.1.0",
+    description="雅思备考认知执行官(v0.1 Plus:支持外部 AI 规划导入)",
+    version="0.1.1",
 )
 
 app.add_middleware(
@@ -28,11 +28,12 @@ app.add_middleware(
 app.include_router(today.router)
 app.include_router(feedback.router)
 app.include_router(progress.router)
+app.include_router(plan.router)
 
 
 @app.get("/")
 def root():
-    return {"service": "CCO Backend", "version": "0.1.0"}
+    return {"service": "CCO Backend", "version": "0.1.1"}
 
 
 @app.get("/health")

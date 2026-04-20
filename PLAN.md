@@ -260,3 +260,59 @@ CREATE TABLE weekly_summary (
 - 🧠 LLM 自动阶段切分(替代现在的硬编码 3 阶段)
 - ⏰ 智能提醒(每天黄金时段推送任务)
 
+---
+
+## v0.1 Plus:外部 AI 共创规划导入(2026-04-20 加入)
+
+### 核心思想
+不做站内多轮对话。**让用户去 Claude / ChatGPT / Kimi / 豆包 web 端聊规划**(借它们的 web search 真实推荐能力),拿到规划文本**粘贴进来**,我们做 extraction + 每日任务注入。
+
+### 为什么这比 v0.2 对话版更好
+- 零 web search 工程成本:外包给主流大模型
+- 用户可用自己熟悉的 AI,多轮修正免费
+- 我们只负责**结构化解析** + **每日任务注入**
+- 工程量从 13h → 5h
+
+### 用户流程
+1. 首次打开 → "还没有规划?从 AI 生成一份"
+2. 复制 prompt 模板 → 去外部 AI 聊 10-20 分钟(利用 web search)
+3. 回来粘贴 AI 的回复
+4. 后端 DeepSeek-R1 做 extraction → 结构化 JSON
+5. 用户 review + 采纳 → 替换硬编码 3 阶段
+6. 之后每日任务 prompt 自动读 plan → 任务含具体资源/原则/checkpoint
+
+### 数据模型
+- 新表 `learning_plan`(`raw_text` + `subject` + `source_ai` + `status` + `phases_data` + `resources` + `daily_habits` + `task_principles` + `checkpoints`)
+- `phase` 表加 `plan_id`(nullable,用户未导入时 fallback 到硬编码)
+
+### 用户 prompt 模板 5 Section 结构
+- **A. 阶段划分**(name, dates, focus_modules, objectives)
+- **B. 资源推荐**(name, url, type, why, phase)— 强制 web search 真实资源
+- **C. 每日 habit**(habit, tool, amount, timing)
+- **D. 任务生成原则**(list of strings)
+- **E. 自检机制**(小 checkpoint 每 2-3 周 + 全真模考 2 次)
+
+### 新增 API 端点
+- `GET /plan/template` — 给用户复制的 prompt 模板
+- `POST /plan/import` — 粘贴 AI 回复 → extract → 返回 draft
+- `POST /plan/{id}/activate` — 采纳 + 同步到 phase 表
+- `GET /plan/active` — 前端查当前 active plan
+- `GET /plan/{id}` — 查某 plan
+
+### 学科泛化
+- `subject` 字段:`"ielts"` / `"gre"` / `"考研英语"` / `"Python 入门"`
+- v0.1 UI 雅思专版,架构字段已兼容
+- v0.3 再加"新建其他科目"入口
+
+### 每日任务 prompt 注入
+`generate_tasks.md` 新增 `<learning_plan>` section:
+- `task_principles`(硬原则,必须遵守)
+- `daily_habits`(每天必做)
+- 当前阶段的 `resources`(优先推荐)
+- 近 14 天的 `checkpoints`(提醒准备)
+
+### 工程量
+- 后端:~3h(表 + migration + LLM extraction + 5 个 route + today prompt 升级)
+- 前端:~2h(`/onboarding` 页 + 首页 CTA + 解析结果预览)
+- **合计 5h,Day 1 晚上继续冲**
+

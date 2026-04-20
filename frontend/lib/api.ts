@@ -1,12 +1,13 @@
 /**
  * 后端 REST 客户端(对应 backend/app/routers/*)
- *
- * Server Component 里直接 await api.today() 即可。
- * Client Component 里也可以用,但要在 'use client' 文件中调。
  */
 import type {
   FeedbackRequest,
   FeedbackResponse,
+  PlanImportRequest,
+  PlanImportResponse,
+  PlanOut,
+  PlanTemplateResponse,
   ProgressResponse,
   TodayResponse,
 } from "./types"
@@ -17,7 +18,6 @@ const API_BASE =
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const res = await fetch(`${API_BASE}${path}`, {
     ...init,
-    // v0.1:每次都新鲜数据,不缓存
     cache: "no-store",
     headers: {
       "Content-Type": "application/json",
@@ -44,4 +44,19 @@ export const api = {
     }),
 
   progress: () => request<ProgressResponse>("/progress"),
+
+  // --- LearningPlan(v0.1 Plus)---
+
+  planTemplate: () => request<PlanTemplateResponse>("/plan/template"),
+
+  planImport: (body: PlanImportRequest) =>
+    request<PlanImportResponse>("/plan/import", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+
+  planActivate: (id: number) =>
+    request<PlanOut>(`/plan/${id}/activate`, { method: "POST" }),
+
+  planActive: () => request<PlanOut | null>("/plan/active"),
 }

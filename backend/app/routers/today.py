@@ -79,6 +79,7 @@ def get_today(
                 module=gt.module,
                 title=gt.title,
                 description=gt.description,
+                rationale=gt.rationale_brief,
                 estimated_minutes=gt.estimated_minutes,
             )
             db.add(t)

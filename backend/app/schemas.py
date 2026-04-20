@@ -61,6 +61,7 @@ class TaskOut(BaseModel):
     module: Module
     title: str
     description: str
+    rationale: Optional[str] = None
     estimated_minutes: int
     actual_minutes: Optional[int] = None
     status: TaskStatus

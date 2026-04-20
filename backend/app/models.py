@@ -103,6 +103,7 @@ class Task(Base):
     module: Mapped[str] = mapped_column(String(20))
     title: Mapped[str] = mapped_column(String(200))
     description: Mapped[str] = mapped_column(Text)
+    rationale: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     estimated_minutes: Mapped[int] = mapped_column(Integer)
     actual_minutes: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     status: Mapped[str] = mapped_column(String(20), default="pending")

@@ -8,6 +8,7 @@ import {
   Check,
   Copy,
   ExternalLink,
+  Info,
   Loader2,
   Sparkles,
 } from "lucide-react"
@@ -137,6 +138,56 @@ export default function OnboardingPage() {
       {/* --- Step 1 --- */}
       {step === 1 && (
         <div className="space-y-6">
+          {/* 使用指南 */}
+          <Card className="bg-primary/5 border-primary/20">
+            <CardContent className="pt-6 space-y-4">
+              <div className="flex items-start gap-3">
+                <Info
+                  className="w-5 h-5 text-primary mt-0.5 shrink-0"
+                  strokeWidth={1.75}
+                />
+                <div className="space-y-3 text-sm flex-1 min-w-0">
+                  <p className="font-medium">怎么用这份模板?</p>
+                  <ol className="list-decimal list-outside ml-4 space-y-1.5 text-foreground/80 text-xs leading-relaxed">
+                    <li>复制下方 prompt → 粘贴到任一主流 AI 网页</li>
+                    <li>
+                      把所有 <code className="px-1 bg-muted rounded text-[10px]">【示例:xxx】</code>
+                      替换成你自己的情况,不想透露的留
+                      <code className="px-1 bg-muted rounded text-[10px]">【待定】</code>
+                    </li>
+                    <li>
+                      AI 会先反问你 3-5 个问题 → 回答后才给完整规划(10-20 分钟)
+                    </li>
+                    <li>让 AI 按 Section A/B/C/D/E 给最终版 → 整段复制回来粘贴</li>
+                  </ol>
+                  <div className="flex gap-1.5 flex-wrap items-center pt-1">
+                    <span className="text-xs text-muted-foreground">
+                      适用学科:
+                    </span>
+                    {[
+                      "雅思",
+                      "GRE",
+                      "考研英语",
+                      "Python",
+                      "日语 N2",
+                      "CFA",
+                      "司考",
+                    ].map((s) => (
+                      <Badge
+                        key={s}
+                        variant="secondary"
+                        className="text-xs font-normal"
+                      >
+                        {s}
+                      </Badge>
+                    ))}
+                    <span className="text-xs text-muted-foreground">等</span>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader className="pb-3">
               <h2 className="font-serif text-2xl font-medium">① 复制 Prompt 模板</h2>

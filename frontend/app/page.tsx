@@ -70,6 +70,12 @@ export default async function TodayPage() {
           <nav className="flex gap-1 items-center">
             <RefreshTasksButton />
             <Link
+              href="/plan"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5"
+            >
+              规划
+            </Link>
+            <Link
               href="/progress"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5"
             >

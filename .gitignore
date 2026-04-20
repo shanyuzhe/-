@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.so
+.Python
+venv/
+env/
+.venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# Env & secrets
+.env
+.env.local
+*.key
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Node / Next.js
+node_modules/
+.next/
+out/
+*.log
+npm-debug.log*
+
+# Claude Code 本地
+.claude/settings.local.json
+.claude/sessions/
+.claude/cache/
+
+# Logs / runtime data
+logs/
+data/
+*.jsonl
+
+# 体验期私人笔记(不 commit)
+NOTES.md
+体验日记.md

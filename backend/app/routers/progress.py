@@ -12,6 +12,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.auth import get_current_user
 from app.db import get_db
 from app.llm import generate_status_assessment
 from app.models import Goal, LearningPlan, Phase, Task, User, WeeklySummary
@@ -28,15 +29,14 @@ router = APIRouter(prefix="/progress", tags=["progress"])
 
 
 @router.get("", response_model=ProgressResponse)
-def get_progress(db: Session = Depends(get_db)):
-    user = db.query(User).first()
-    if not user:
-        raise HTTPException(404, "未初始化用户")
-
+def get_progress(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     today = date.today()
     goal = db.query(Goal).filter(Goal.user_id == user.id).first()
     if not goal:
-        raise HTTPException(404, "无 goal")
+        raise HTTPException(400, "尚未导入规划,请先去 /onboarding")
 
     # 先查 active plan,为 phase 查询加防御性 plan_id 过滤
     active_plan = (
@@ -59,7 +59,9 @@ def get_progress(db: Session = Depends(get_db)):
         phase_q = phase_q.filter(Phase.plan_id == active_plan.id)
     phase = phase_q.first()
 
-    days_to_exam = (user.exam_date - today).days
+    days_to_exam = (
+        (user.exam_date - today).days if user.exam_date else 0
+    )
 
     # 阶段时间推进
     phase_progress = 0.0
@@ -390,28 +392,28 @@ def _aggregate_full(
 
 
 @router.get("/full", response_model=ProgressFullResponse)
-def get_progress_full(db: Session = Depends(get_db)):
+def get_progress_full(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """总体进度评估:跨越整个学习周期的聚合视图(只读,零 LLM)。
 
     status_assessment 从 learning_plan.latest_assessment 读缓存,
     要刷新需 POST /progress/assessment/refresh。
     """
-    user = db.query(User).first()
-    if not user:
-        raise HTTPException(404, "未初始化用户")
     response, _ctx = _aggregate_full(db, user)
     return response
 
 
 @router.post("/assessment/refresh")
-def refresh_assessment(db: Session = Depends(get_db)):
+def refresh_assessment(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """强制重新调 V3 生成总体状态评语,写入 learning_plan 并返回。
 
     24h 缓存由前端决定是否触发(端点本身不做时间判断,每次都重算)。
     """
-    user = db.query(User).first()
-    if not user:
-        raise HTTPException(404, "未初始化用户")
 
     active_plan = (
         db.query(LearningPlan)

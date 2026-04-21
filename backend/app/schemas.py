@@ -40,6 +40,38 @@ class GeneratedTasksList(BaseModel):
     tasks: list[GeneratedTask] = Field(..., min_length=1, max_length=8)
 
 
+# =====================================================
+# v0.4:认证
+# =====================================================
+
+class RegisterRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50, pattern=r"^[A-Za-z0-9_\-]+$")
+    password: str = Field(..., min_length=6, max_length=128)
+    invitation_code: str = Field(..., min_length=6, max_length=32)
+
+
+class LoginRequest(BaseModel):
+    username: str = Field(..., min_length=3, max_length=50)
+    password: str = Field(..., min_length=6, max_length=128)
+
+
+class TokenResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user_id: int
+    username: str
+
+
+class UserInfoResponse(BaseModel):
+    id: int
+    username: str
+    exam_date: Optional[date] = None
+    daily_hours: float = 7.0
+    has_plan: bool = False
+
+    model_config = ConfigDict(from_attributes=True)
+
+
 class WeeklySummaryLLM(BaseModel):
     """周度总结 LLM 响应"""
 

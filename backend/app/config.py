@@ -34,6 +34,11 @@ class Settings(BaseSettings):
     # --- Dev ---
     MOCK_LLM: bool = Field(default=False)
 
+    # --- v0.4 Auth ---
+    JWT_SECRET: str = Field(default="cco-dev-secret-change-in-prod")
+    JWT_ALGO: str = Field(default="HS256")
+    JWT_EXPIRE_DAYS: int = Field(default=30)
+
 
 @lru_cache
 def get_settings() -> Settings:

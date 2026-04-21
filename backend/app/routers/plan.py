@@ -13,6 +13,7 @@ from pathlib import Path
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.auth import get_current_user
 from app.db import get_db
 from app.llm import extract_learning_plan
 from app.models import Goal, LearningPlan, Phase, Task, User
@@ -33,6 +34,14 @@ PROMPTS_DIR = (
 )
 
 
+def _is_valid_date(s: str) -> bool:
+    try:
+        date.fromisoformat(s)
+        return True
+    except (ValueError, TypeError):
+        return False
+
+
 @router.get("/template", response_model=PlanTemplateResponse)
 def get_user_template():
     """返回给用户复制到外部 AI 的 prompt 模板"""
@@ -43,12 +52,12 @@ def get_user_template():
 
 
 @router.post("/import", response_model=PlanImportResponse)
-def import_plan(req: PlanImportRequest, db: Session = Depends(get_db)):
+def import_plan(
+    req: PlanImportRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """粘贴外部 AI 规划 → DeepSeek-R1 extraction → 存为 draft"""
-    user = db.query(User).first()
-    if not user:
-        raise HTTPException(404, "未初始化用户")
-
     extracted = extract_learning_plan(req.raw_text)
 
     plan = LearningPlan(
@@ -88,15 +97,19 @@ def import_plan(req: PlanImportRequest, db: Session = Depends(get_db)):
 
 
 @router.post("/{plan_id}/activate", response_model=PlanOut)
-def activate_plan(plan_id: int, db: Session = Depends(get_db)):
-    """激活 plan → 替换硬编码 phases"""
-    plan = db.query(LearningPlan).filter(LearningPlan.id == plan_id).first()
+def activate_plan(
+    plan_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """激活 plan → 替换硬编码 phases(严格 user_id 隔离)"""
+    plan = (
+        db.query(LearningPlan)
+        .filter(LearningPlan.id == plan_id, LearningPlan.user_id == user.id)
+        .first()
+    )
     if not plan:
         raise HTTPException(404, "plan 不存在")
-
-    user = db.query(User).first()
-    if not user:
-        raise HTTPException(404, "user 不存在")
 
     # 归档其他 active plans
     db.query(LearningPlan).filter(
@@ -113,8 +126,31 @@ def activate_plan(plan_id: int, db: Session = Depends(get_db)):
     if plan.daily_hours is not None:
         user.daily_hours = plan.daily_hours
 
-    # 替换 phases
+    # 新用户首次激活时,若没有 goal,自动创建(subject + 根据 plan 最后 phase 推断 exam_date)
     goal = db.query(Goal).filter(Goal.user_id == user.id).first()
+    if not goal and plan.phases_data:
+        try:
+            last_end = max(
+                date.fromisoformat(p["end_date"])
+                for p in plan.phases_data
+                if _is_valid_date(p.get("end_date", ""))
+            )
+        except ValueError:
+            last_end = None
+        if last_end:
+            goal = Goal(
+                user_id=user.id,
+                name=plan.subject or "学习目标",
+                target_score=0.0,
+                current_estimate=0.0,
+                deadline=last_end,
+            )
+            db.add(goal)
+            db.flush()
+            # 同步到 user.exam_date
+            if not user.exam_date:
+                user.exam_date = last_end
+
     if goal and plan.phases_data:
         # 删 goal 下所有 phase(硬编码 + 其他 archived plan 残留 + 自己旧的)
         # 保证 phase 表里只剩当前 active plan 的数据,不会被历史污染
@@ -153,11 +189,11 @@ def activate_plan(plan_id: int, db: Session = Depends(get_db)):
 
 
 @router.get("/active", response_model=PlanOut | None)
-def get_active_plan(db: Session = Depends(get_db)):
+def get_active_plan(
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
     """当前激活的 plan(没 active 就返 null)"""
-    user = db.query(User).first()
-    if not user:
-        return None
     plan = (
         db.query(LearningPlan)
         .filter(
@@ -171,8 +207,16 @@ def get_active_plan(db: Session = Depends(get_db)):
 
 
 @router.get("/{plan_id}", response_model=PlanOut)
-def get_plan(plan_id: int, db: Session = Depends(get_db)):
-    plan = db.query(LearningPlan).filter(LearningPlan.id == plan_id).first()
+def get_plan(
+    plan_id: int,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    plan = (
+        db.query(LearningPlan)
+        .filter(LearningPlan.id == plan_id, LearningPlan.user_id == user.id)
+        .first()
+    )
     if not plan:
         raise HTTPException(404, "plan 不存在")
     return PlanOut.model_validate(plan)
@@ -224,10 +268,15 @@ def patch_phase(
     plan_id: int,
     index: int,
     req: PhasePatchRequest,
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """编辑某个阶段(只改传入的字段)"""
-    plan = db.query(LearningPlan).filter(LearningPlan.id == plan_id).first()
+    plan = (
+        db.query(LearningPlan)
+        .filter(LearningPlan.id == plan_id, LearningPlan.user_id == user.id)
+        .first()
+    )
     if not plan:
         raise HTTPException(404, "plan 不存在")
     if index < 0 or index >= len(plan.phases_data):
@@ -277,10 +326,15 @@ def patch_phase(
 def patch_habits(
     plan_id: int,
     req: HabitsPatchRequest,
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """整组替换 daily_habits"""
-    plan = db.query(LearningPlan).filter(LearningPlan.id == plan_id).first()
+    plan = (
+        db.query(LearningPlan)
+        .filter(LearningPlan.id == plan_id, LearningPlan.user_id == user.id)
+        .first()
+    )
     if not plan:
         raise HTTPException(404, "plan 不存在")
     plan.daily_habits = [h.model_dump() for h in req.habits]
@@ -293,10 +347,15 @@ def patch_habits(
 def patch_principles(
     plan_id: int,
     req: PrinciplesPatchRequest,
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """整组替换 task_principles"""
-    plan = db.query(LearningPlan).filter(LearningPlan.id == plan_id).first()
+    plan = (
+        db.query(LearningPlan)
+        .filter(LearningPlan.id == plan_id, LearningPlan.user_id == user.id)
+        .first()
+    )
     if not plan:
         raise HTTPException(404, "plan 不存在")
     plan.task_principles = [p.strip() for p in req.principles if p.strip()]

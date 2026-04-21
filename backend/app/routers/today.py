@@ -9,6 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func
 from sqlalchemy.orm import Session
 
+from app.auth import get_current_user
 from app.db import get_db
 from app.llm import generate_today_tasks
 from app.models import Event, Goal, LearningPlan, Phase, Task, User
@@ -22,6 +23,7 @@ def get_today(
     force_refresh: bool = Query(
         False, description="重新调 LLM 生成(默认当日缓存)"
     ),
+    user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """获取今日任务卡。
@@ -31,14 +33,10 @@ def get_today(
       - 同一天后续调用 → 返回已存的任务(不再调 LLM)
       - force_refresh=True → 删除当天所有 pending 任务,重新生成
     """
-    user = db.query(User).first()
-    if not user:
-        raise HTTPException(404, "尚未初始化用户,请先跑 scripts/seed_phases.py")
-
     today = date.today()
     goal = db.query(Goal).filter(Goal.user_id == user.id).first()
     if not goal:
-        raise HTTPException(404, "无 goal,请跑 seed")
+        raise HTTPException(400, "尚未创建目标,请先去 /onboarding 导入规划")
 
     # 查 active plan,phase 查询加防御性 plan_id filter 避免历史 orphan
     active_plan = (

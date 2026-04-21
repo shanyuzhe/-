@@ -4,16 +4,26 @@ from datetime import datetime
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
+from app.auth import get_current_user
 from app.db import get_db
-from app.models import Event, Task
+from app.models import Event, Task, User
 from app.schemas import FeedbackRequest
 
 router = APIRouter(prefix="/feedback", tags=["feedback"])
 
 
 @router.post("")
-def submit_feedback(req: FeedbackRequest, db: Session = Depends(get_db)):
-    task = db.query(Task).filter(Task.id == req.task_id).first()
+def submit_feedback(
+    req: FeedbackRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    # 数据隔离:只能改自己的 task
+    task = (
+        db.query(Task)
+        .filter(Task.id == req.task_id, Task.user_id == user.id)
+        .first()
+    )
     if not task:
         raise HTTPException(404, f"task id={req.task_id} 不存在")
 

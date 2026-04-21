@@ -35,7 +35,13 @@ class User(Base):
     __tablename__ = "user"
 
     id: Mapped[int] = mapped_column(primary_key=True)
-    exam_date: Mapped[date] = mapped_column(Date, nullable=False)
+    # v0.4:多用户认证
+    username: Mapped[Optional[str]] = mapped_column(
+        String(50), unique=True, index=True, nullable=True
+    )
+    password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    # v0.4:新用户激活后 exam_date 先为 null,进 onboarding 时填
+    exam_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     daily_hours: Mapped[float] = mapped_column(Float, default=7.0)
     prefer_slots: Mapped[list] = mapped_column(JSON, default=list)
     weakness_rank: Mapped[list] = mapped_column(JSON, default=list)
@@ -177,3 +183,19 @@ class LearningPlan(Base):
     # v0.2 S4:V3 生成的总体状态评语(150 字内)+ 时间戳;24h 缓存,手动刷新覆盖
     latest_assessment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     assessment_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+
+class InvitationCode(Base):
+    """v0.4:邀请码。管理员预生成,注册时消耗(单次使用)"""
+
+    __tablename__ = "invitation_code"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    code: Mapped[str] = mapped_column(String(32), unique=True, index=True)
+    status: Mapped[str] = mapped_column(String(10), default="unused")  # unused/used
+    used_by_user_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("user.id"), nullable=True
+    )
+    used_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+    note: Mapped[Optional[str]] = mapped_column(String(100), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)

@@ -107,6 +107,48 @@ class ProgressResponse(BaseModel):
 
 
 # =====================================================
+# /progress/full 总体进度评估(v0.2 S2)
+# =====================================================
+
+class WeeklyPoint(BaseModel):
+    week_start: str  # YYYY-MM-DD(周一)
+    rate: float = Field(..., ge=0, le=1)
+    avg_feeling: float = Field(..., ge=0, le=5)
+    tasks: int
+
+
+class ModuleHeat(BaseModel):
+    total_min: int
+    done_rate: float = Field(..., ge=0, le=1)
+    avg_feeling: float = Field(..., ge=0, le=5)
+
+
+class MilestonePrediction(BaseModel):
+    phase_name: str
+    on_track: Optional[bool] = None  # True/False/None(未开始)
+    confidence: Optional[float] = None  # 0-1,None 表示不可评估
+    completion_forecast: Optional[str] = None  # 人类可读的预估
+    phase_end: Optional[str] = None
+    done_tasks: int = 0
+    target_tasks: int = 0
+
+
+class ProgressFullResponse(BaseModel):
+    """总体进度评估:跨越当前 plan 激活以来的所有数据"""
+
+    since_date: Optional[str] = None  # 统计起点(plan_activated 或最早 task.date)
+    plan_activated_at: Optional[str] = None
+    days_covered: int = 0
+    overall_completion_rate: float = Field(..., ge=0, le=1)
+    overall_avg_feeling: float = Field(..., ge=0, le=5)
+    total_tasks: int = 0
+    weekly_trajectory: list[WeeklyPoint] = Field(default_factory=list)
+    module_heatmap: dict[str, ModuleHeat] = Field(default_factory=dict)
+    milestone_predictions: list[MilestonePrediction] = Field(default_factory=list)
+    status_assessment: Optional[str] = None  # S4 做,本期留空
+
+
+# =====================================================
 # LearningPlan 导入(v0.1 Plus)
 # =====================================================
 

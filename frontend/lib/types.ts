@@ -62,6 +62,44 @@ export interface ProgressResponse {
   latest_summary: string | null
 }
 
+// ============ /progress/full(v0.2 S2)============
+
+export interface WeeklyPoint {
+  week_start: string
+  rate: number
+  avg_feeling: number
+  tasks: number
+}
+
+export interface ModuleHeat {
+  total_min: number
+  done_rate: number
+  avg_feeling: number
+}
+
+export interface MilestonePrediction {
+  phase_name: string
+  on_track: boolean | null
+  confidence: number | null
+  completion_forecast: string | null
+  phase_end: string | null
+  done_tasks: number
+  target_tasks: number
+}
+
+export interface ProgressFullResponse {
+  since_date: string | null
+  plan_activated_at: string | null
+  days_covered: number
+  overall_completion_rate: number
+  overall_avg_feeling: number
+  total_tasks: number
+  weekly_trajectory: WeeklyPoint[]
+  module_heatmap: Record<string, ModuleHeat>
+  milestone_predictions: MilestonePrediction[]
+  status_assessment: string | null
+}
+
 // ============ LearningPlan(v0.1 Plus)============
 
 export interface PhaseData {

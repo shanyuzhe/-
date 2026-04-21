@@ -8,6 +8,7 @@ import type {
   PlanImportResponse,
   PlanOut,
   PlanTemplateResponse,
+  ProgressFullResponse,
   ProgressResponse,
   TodayResponse,
 } from "./types"
@@ -52,6 +53,8 @@ export const api = {
     }),
 
   progress: () => request<ProgressResponse>("/progress"),
+
+  progressFull: () => request<ProgressFullResponse>("/progress/full"),
 
   // --- LearningPlan(v0.1 Plus)---
 

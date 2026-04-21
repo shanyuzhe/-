@@ -98,6 +98,7 @@ export interface ProgressFullResponse {
   module_heatmap: Record<string, ModuleHeat>
   milestone_predictions: MilestonePrediction[]
   status_assessment: string | null
+  assessment_at: string | null
 }
 
 // ============ LearningPlan(v0.1 Plus)============

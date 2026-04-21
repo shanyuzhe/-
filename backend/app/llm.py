@@ -31,6 +31,7 @@ from app.schemas import (
     GeneratedTasksList,
     PhaseData,
     Resource,
+    StatusAssessmentLLM,
     WeeklySummaryLLM,
 )
 
@@ -234,6 +235,56 @@ def generate_weekly_summary(context: dict) -> WeeklySummaryLLM:
     except RuntimeError:
         logger.warning("Weekly LLM 失败,降级到 mock")
         return _mock_summary()
+
+
+# =============================================================
+# 调用点 4:总体状态评语(V3,v0.2 S4)
+# =============================================================
+
+def generate_status_assessment(context: dict) -> StatusAssessmentLLM:
+    """给 /progress/full 的 status_assessment 字段生成一段自然语言评语。
+
+    context 需含占位符:since_date / days_covered / overall_rate_pct /
+      avg_feeling / total_tasks / weekly_trajectory_text / module_heatmap_text /
+      recent_tasks_text / phase_name / day_in_phase / phase_total_days / phase_focus
+    """
+    if settings.MOCK_LLM:
+        return StatusAssessmentLLM(
+            assessment=(
+                f"[MOCK] 覆盖 {context.get('days_covered', 0)} 天,"
+                f"完成率 {context.get('overall_rate_pct', 0)}%,"
+                f"感受 {context.get('avg_feeling', 0)}/5。继续按计划推进。"
+            )
+        )
+
+    template = _load_prompt("status_assessment.md")
+    if "## USER 模板" in template:
+        template = template.split("## USER 模板", 1)[1]
+
+    system_prompt = (
+        "你是用户的学习认知执行官(CCO)。"
+        "基于真实数据给一段 80-130 字的总体状态评语。"
+        "严格 JSON 输出,只含 assessment 一个字段,不要寒暄。"
+    )
+    try:
+        user_prompt = template.format(**context)
+    except KeyError as e:
+        logger.error("Assessment prompt context 缺字段 %s", e)
+        return StatusAssessmentLLM(assessment="(数据不足以生成评语)")
+
+    try:
+        return _call_with_retry(
+            model=settings.MODEL_FAST,
+            system=system_prompt,
+            user=user_prompt,
+            max_tokens=600,
+            schema_cls=StatusAssessmentLLM,
+            timeout=60.0,
+            retries=1,
+        )
+    except RuntimeError:
+        logger.warning("status_assessment LLM 失败,返回占位")
+        return StatusAssessmentLLM(assessment="(评语生成失败,请稍后手动刷新)")
 
 
 # =============================================================

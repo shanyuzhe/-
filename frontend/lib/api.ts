@@ -56,6 +56,12 @@ export const api = {
 
   progressFull: () => request<ProgressFullResponse>("/progress/full"),
 
+  refreshAssessment: () =>
+    request<{ assessment: string; assessment_at: string | null }>(
+      "/progress/assessment/refresh",
+      { method: "POST" }
+    ),
+
   // --- LearningPlan(v0.1 Plus)---
 
   planTemplate: () => request<PlanTemplateResponse>("/plan/template"),

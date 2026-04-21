@@ -48,6 +48,12 @@ class WeeklySummaryLLM(BaseModel):
     suggestions_text: str = Field(..., max_length=500)
 
 
+class StatusAssessmentLLM(BaseModel):
+    """总体状态评语(纯文本,80-130 字)"""
+
+    assessment: str = Field(..., min_length=20, max_length=500)
+
+
 # =====================================================
 # API I/O
 # =====================================================
@@ -145,7 +151,8 @@ class ProgressFullResponse(BaseModel):
     weekly_trajectory: list[WeeklyPoint] = Field(default_factory=list)
     module_heatmap: dict[str, ModuleHeat] = Field(default_factory=dict)
     milestone_predictions: list[MilestonePrediction] = Field(default_factory=list)
-    status_assessment: Optional[str] = None  # S4 做,本期留空
+    status_assessment: Optional[str] = None  # 从 learning_plan.latest_assessment 读
+    assessment_at: Optional[str] = None  # ISO 时间戳
 
 
 # =====================================================

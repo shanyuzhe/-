@@ -2,6 +2,7 @@ import Link from "next/link"
 import { ArrowLeft, Target, TrendingUp } from "lucide-react"
 import { api } from "@/lib/api"
 import { Separator } from "@/components/ui/separator"
+import AssessmentPanel from "@/components/AssessmentPanel"
 import type { WeeklyPoint, MilestonePrediction } from "@/lib/types"
 
 // 已知 module 翻译;未知的保持原文(支持 408/日语/编程等学科自定义)
@@ -315,6 +316,11 @@ export default async function ProgressPage() {
                 )}
               </div>
             )}
+
+            <AssessmentPanel
+              assessment={full.status_assessment}
+              assessmentAt={full.assessment_at}
+            />
           </section>
         )}
 

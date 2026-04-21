@@ -13,6 +13,7 @@ from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app.db import get_db
+from app.llm import generate_status_assessment
 from app.models import Goal, LearningPlan, Phase, Task, User, WeeklySummary
 from app.schemas import (
     MilestonePrediction,
@@ -21,6 +22,7 @@ from app.schemas import (
     ProgressResponse,
     WeeklyPoint,
 )
+from datetime import datetime as _dt
 
 router = APIRouter(prefix="/progress", tags=["progress"])
 
@@ -131,19 +133,13 @@ def get_progress(db: Session = Depends(get_db)):
     )
 
 
-@router.get("/full", response_model=ProgressFullResponse)
-def get_progress_full(db: Session = Depends(get_db)):
-    """总体进度评估:跨越整个学习周期的聚合视图。
+def _aggregate_full(
+    db: Session, user: User
+) -> tuple[ProgressFullResponse, dict | None]:
+    """聚合 /progress/full 响应 + 返回 LLM context(给 assessment refresh 用)。
 
-    统计起点:
-      - 若有 active plan 且 activated_at 早于最早 task,用 plan_activated_at
-      - 否则用最早 task 的 date(兼容 seed 假历史早于 plan 激活的场景)
-      - 两者皆无 → 返回空响应
+    若无数据,返回 (empty_response, None)。
     """
-    user = db.query(User).first()
-    if not user:
-        raise HTTPException(404, "未初始化用户")
-
     today = date.today()
 
     active_plan = (
@@ -166,9 +162,12 @@ def get_progress_full(db: Session = Depends(get_db)):
     # 选较早的那个作为 since
     candidates = [d for d in (plan_activated, earliest_task_date) if d is not None]
     if not candidates:
-        return ProgressFullResponse(
-            overall_completion_rate=0.0,
-            overall_avg_feeling=0.0,
+        return (
+            ProgressFullResponse(
+                overall_completion_rate=0.0,
+                overall_avg_feeling=0.0,
+            ),
+            None,
         )
     since = min(candidates)
     days_covered = (today - since).days + 1
@@ -306,7 +305,7 @@ def get_progress_full(db: Session = Depends(get_db)):
             base.completion_forecast = forecast_label
             predictions.append(base)
 
-    return ProgressFullResponse(
+    response = ProgressFullResponse(
         since_date=since.isoformat(),
         plan_activated_at=plan_activated.isoformat() if plan_activated else None,
         days_covered=days_covered,
@@ -316,5 +315,131 @@ def get_progress_full(db: Session = Depends(get_db)):
         weekly_trajectory=trajectory,
         module_heatmap=heatmap,
         milestone_predictions=predictions,
-        status_assessment=None,
+        status_assessment=(
+            active_plan.latest_assessment if active_plan else None
+        ),
+        assessment_at=(
+            active_plan.assessment_at.isoformat()
+            if active_plan and active_plan.assessment_at
+            else None
+        ),
     )
+
+    # ---- 组装给 LLM 评语用的 context ----
+    current_phase = None
+    if goal and active_plan:
+        current_phase = (
+            db.query(Phase)
+            .filter(
+                Phase.goal_id == goal.id,
+                Phase.plan_id == active_plan.id,
+                Phase.start_date <= today,
+                Phase.end_date >= today,
+            )
+            .first()
+        )
+
+    trajectory_text = "\n".join(
+        f"{p.week_start}: rate={int(p.rate*100)}%, "
+        f"feel={p.avg_feeling:.1f}, tasks={p.tasks}"
+        for p in trajectory
+    ) or "暂无"
+
+    heatmap_sorted = sorted(
+        heatmap.items(), key=lambda kv: kv[1].total_min, reverse=True
+    )
+    heatmap_text = "\n".join(
+        f"{m}: {h.total_min} 分钟, done {int(h.done_rate*100)}%, feel {h.avg_feeling:.1f}"
+        for m, h in heatmap_sorted
+        if h.total_min > 0 or h.done_rate > 0
+    ) or "暂无"
+
+    seven_ago = today - timedelta(days=7)
+    recent = [t for t in tasks if seven_ago <= t.date < today]
+    recent.sort(key=lambda t: (t.date, t.seq), reverse=True)
+    recent_text = "\n".join(
+        f"{t.date} | {t.module} | {t.title} | {t.status} | "
+        f"feeling={t.feeling if t.feeling is not None else '-'} | "
+        f"{t.actual_minutes or '-'}/{t.estimated_minutes}min"
+        for t in recent[:30]
+    ) or "暂无"
+
+    context: dict = {
+        "since_date": since.isoformat(),
+        "days_covered": days_covered,
+        "overall_rate_pct": int(round(overall_rate * 100)),
+        "avg_feeling": round(overall_avg_feeling, 1),
+        "total_tasks": total,
+        "weekly_trajectory_text": trajectory_text,
+        "module_heatmap_text": heatmap_text,
+        "recent_tasks_text": recent_text,
+        "phase_name": current_phase.name if current_phase else "(未在任何阶段)",
+        "day_in_phase": (
+            (today - current_phase.start_date).days + 1 if current_phase else 0
+        ),
+        "phase_total_days": (
+            (current_phase.end_date - current_phase.start_date).days + 1
+            if current_phase
+            else 0
+        ),
+        "phase_focus": (
+            ", ".join(current_phase.focus_modules) if current_phase else "(无)"
+        ),
+    }
+    return response, context
+
+
+@router.get("/full", response_model=ProgressFullResponse)
+def get_progress_full(db: Session = Depends(get_db)):
+    """总体进度评估:跨越整个学习周期的聚合视图(只读,零 LLM)。
+
+    status_assessment 从 learning_plan.latest_assessment 读缓存,
+    要刷新需 POST /progress/assessment/refresh。
+    """
+    user = db.query(User).first()
+    if not user:
+        raise HTTPException(404, "未初始化用户")
+    response, _ctx = _aggregate_full(db, user)
+    return response
+
+
+@router.post("/assessment/refresh")
+def refresh_assessment(db: Session = Depends(get_db)):
+    """强制重新调 V3 生成总体状态评语,写入 learning_plan 并返回。
+
+    24h 缓存由前端决定是否触发(端点本身不做时间判断,每次都重算)。
+    """
+    user = db.query(User).first()
+    if not user:
+        raise HTTPException(404, "未初始化用户")
+
+    active_plan = (
+        db.query(LearningPlan)
+        .filter(
+            LearningPlan.user_id == user.id,
+            LearningPlan.status == "active",
+        )
+        .order_by(LearningPlan.activated_at.desc().nullslast())
+        .first()
+    )
+    if not active_plan:
+        raise HTTPException(400, "无 active plan,先激活规划再生成评语")
+
+    _response, context = _aggregate_full(db, user)
+    if context is None:
+        raise HTTPException(400, "尚无任何任务记录,无法生成评语")
+
+    result = generate_status_assessment(context)
+    active_plan.latest_assessment = result.assessment
+    active_plan.assessment_at = _dt.now()
+    db.commit()
+    db.refresh(active_plan)
+
+    return {
+        "assessment": active_plan.latest_assessment,
+        "assessment_at": (
+            active_plan.assessment_at.isoformat()
+            if active_plan.assessment_at
+            else None
+        ),
+    }

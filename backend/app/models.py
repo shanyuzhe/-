@@ -173,3 +173,7 @@ class LearningPlan(Base):
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
     activated_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
+
+    # v0.2 S4:V3 生成的总体状态评语(150 字内)+ 时间戳;24h 缓存,手动刷新覆盖
+    latest_assessment: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
+    assessment_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)

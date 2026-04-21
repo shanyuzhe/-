@@ -24,13 +24,25 @@ export function TaskFeedbackDialog({
   task,
   initialStatus,
   trigger,
+  open: openProp,
+  onOpenChange,
 }: {
   task: TaskOut
   initialStatus: Status
-  trigger: React.ReactNode
+  /** 可选触发器。受控模式(传 open/onOpenChange)下可省略。 */
+  trigger?: React.ReactNode
+  /** 可选受控 open(外部控制打开,比如长按触发)。 */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const [openInternal, setOpenInternal] = useState(false)
+  const isControlled = openProp !== undefined
+  const open = isControlled ? openProp : openInternal
+  const setOpen = (v: boolean) => {
+    if (!isControlled) setOpenInternal(v)
+    onOpenChange?.(v)
+  }
   const [actualMin, setActualMin] = useState<string>(
     task.estimated_minutes.toString()
   )
@@ -62,7 +74,7 @@ export function TaskFeedbackDialog({
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>{trigger}</DialogTrigger>
+      {trigger && <DialogTrigger asChild>{trigger}</DialogTrigger>}
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-serif text-xl font-medium">

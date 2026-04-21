@@ -11,6 +11,9 @@ import { Card, CardContent } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import { cn } from "@/lib/utils"
+import PhaseEditor from "@/components/PhaseEditor"
+import HabitsEditor from "@/components/HabitsEditor"
+import PrinciplesEditor from "@/components/PrinciplesEditor"
 import type { PlanOut } from "@/lib/types"
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -146,36 +149,7 @@ function PlanDetail({ plan }: { plan: PlanOut }) {
   return (
     <div className="space-y-10">
       <Section title="阶段划分" count={plan.phases_data.length}>
-        <div className="space-y-3">
-          {plan.phases_data.map((p, i) => (
-            <Card key={i}>
-              <CardContent className="pt-6 space-y-2">
-                <div className="flex items-start justify-between gap-3 flex-wrap">
-                  <h3 className="font-medium text-lg">{p.name}</h3>
-                  <span className="text-xs text-muted-foreground tabular-nums">
-                    {p.start_date} → {p.end_date}
-                  </span>
-                </div>
-                <div className="flex gap-1.5 flex-wrap">
-                  {p.focus_modules.map((m) => (
-                    <Badge
-                      key={m}
-                      variant="secondary"
-                      className="font-normal"
-                    >
-                      {translateModule(m)}
-                    </Badge>
-                  ))}
-                </div>
-                {p.objectives && (
-                  <p className="text-sm text-foreground/80 mt-2">
-                    {p.objectives}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <PhaseEditor planId={plan.id} phases={plan.phases_data} />
       </Section>
 
       <Separator />
@@ -224,35 +198,16 @@ function PlanDetail({ plan }: { plan: PlanOut }) {
       <Separator />
 
       <Section title="每日 Habit" count={plan.daily_habits.length}>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {plan.daily_habits.map((h, i) => (
-            <Card key={i}>
-              <CardContent className="pt-6">
-                <p className="font-medium">{h.habit}</p>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {[h.tool, h.amount, h.timing].filter(Boolean).join(" · ")}
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <HabitsEditor planId={plan.id} habits={plan.daily_habits} />
       </Section>
 
       <Separator />
 
       <Section title="任务原则" count={plan.task_principles.length}>
-        <Card>
-          <CardContent className="pt-6">
-            <ul className="space-y-2 text-sm">
-              {plan.task_principles.map((p, i) => (
-                <li key={i} className="flex gap-2">
-                  <span className="text-primary shrink-0 mt-0.5">·</span>
-                  <span>{p}</span>
-                </li>
-              ))}
-            </ul>
-          </CardContent>
-        </Card>
+        <PrinciplesEditor
+          planId={plan.id}
+          principles={plan.task_principles}
+        />
       </Section>
 
       <Separator />

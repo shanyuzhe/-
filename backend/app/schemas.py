@@ -212,6 +212,28 @@ class ExtractedPlan(BaseModel):
     checkpoints: list[Checkpoint] = Field(default_factory=list)
 
 
+class PhasePatchRequest(BaseModel):
+    """编辑某个 phase(所有字段可选,只改传入的)"""
+
+    name: Optional[str] = Field(None, max_length=50)
+    start_date: Optional[str] = None  # YYYY-MM-DD
+    end_date: Optional[str] = None
+    focus_modules: Optional[list[Module]] = None
+    objectives: Optional[str] = Field(None, max_length=500)
+
+
+class HabitsPatchRequest(BaseModel):
+    """整组替换 daily_habits"""
+
+    habits: list[DailyHabit]
+
+
+class PrinciplesPatchRequest(BaseModel):
+    """整组替换 task_principles(list[str])"""
+
+    principles: list[str] = Field(..., max_length=20)
+
+
 class PlanImportRequest(BaseModel):
     raw_text: str = Field(..., min_length=50, max_length=30000)
     source_ai: Optional[str] = Field(

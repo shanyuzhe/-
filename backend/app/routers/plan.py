@@ -17,10 +17,13 @@ from app.db import get_db
 from app.llm import extract_learning_plan
 from app.models import Goal, LearningPlan, Phase, Task, User
 from app.schemas import (
+    HabitsPatchRequest,
+    PhasePatchRequest,
     PlanImportRequest,
     PlanImportResponse,
     PlanOut,
     PlanTemplateResponse,
+    PrinciplesPatchRequest,
 )
 
 router = APIRouter(prefix="/plan", tags=["plan"])
@@ -172,4 +175,131 @@ def get_plan(plan_id: int, db: Session = Depends(get_db)):
     plan = db.query(LearningPlan).filter(LearningPlan.id == plan_id).first()
     if not plan:
         raise HTTPException(404, "plan 不存在")
+    return PlanOut.model_validate(plan)
+
+
+# =============================================================
+# v0.3 S1:Plan 在线编辑
+# =============================================================
+
+def _sync_phase_table(db: Session, plan: LearningPlan) -> None:
+    """把 plan.phases_data 同步到 phase 表(仅当 plan 是 active)。
+
+    只有 active plan 才需要 sync;archived/draft 改 JSON 就够。
+    """
+    if plan.status != "active":
+        return
+    user = db.query(User).filter(User.id == plan.user_id).first()
+    if not user:
+        return
+    goal = db.query(Goal).filter(Goal.user_id == user.id).first()
+    if not goal:
+        return
+
+    # 删掉 active plan 的所有 phase 后重建(最简,避免索引错位)
+    db.query(Phase).filter(
+        Phase.goal_id == goal.id, Phase.plan_id == plan.id
+    ).delete()
+    for pd in plan.phases_data:
+        try:
+            start = date.fromisoformat(pd["start_date"])
+            end = date.fromisoformat(pd["end_date"])
+        except (ValueError, KeyError, TypeError):
+            continue
+        db.add(
+            Phase(
+                goal_id=goal.id,
+                plan_id=plan.id,
+                name=pd.get("name", "未命名阶段"),
+                start_date=start,
+                end_date=end,
+                focus_modules=pd.get("focus_modules", []),
+                target_tasks=pd.get("target_tasks", 0),
+            )
+        )
+
+
+@router.patch("/{plan_id}/phase/{index}", response_model=PlanOut)
+def patch_phase(
+    plan_id: int,
+    index: int,
+    req: PhasePatchRequest,
+    db: Session = Depends(get_db),
+):
+    """编辑某个阶段(只改传入的字段)"""
+    plan = db.query(LearningPlan).filter(LearningPlan.id == plan_id).first()
+    if not plan:
+        raise HTTPException(404, "plan 不存在")
+    if index < 0 or index >= len(plan.phases_data):
+        raise HTTPException(404, f"phase index {index} 超出范围")
+
+    updated = dict(plan.phases_data[index])
+    if req.name is not None:
+        updated["name"] = req.name
+    if req.start_date is not None:
+        try:
+            date.fromisoformat(req.start_date)
+        except ValueError:
+            raise HTTPException(422, "start_date 必须是 YYYY-MM-DD")
+        updated["start_date"] = req.start_date
+    if req.end_date is not None:
+        try:
+            date.fromisoformat(req.end_date)
+        except ValueError:
+            raise HTTPException(422, "end_date 必须是 YYYY-MM-DD")
+        updated["end_date"] = req.end_date
+    if req.focus_modules is not None:
+        updated["focus_modules"] = req.focus_modules
+    if req.objectives is not None:
+        updated["objectives"] = req.objectives
+
+    # 校验:start_date <= end_date
+    try:
+        if date.fromisoformat(updated["start_date"]) > date.fromisoformat(
+            updated["end_date"]
+        ):
+            raise HTTPException(422, "start_date 不能晚于 end_date")
+    except (ValueError, KeyError):
+        raise HTTPException(422, "阶段日期格式损坏")
+
+    # 替换 JSON(SQLAlchemy 对 JSON 要赋值整个列表才会脏标)
+    new_phases = list(plan.phases_data)
+    new_phases[index] = updated
+    plan.phases_data = new_phases
+
+    _sync_phase_table(db, plan)
+    db.commit()
+    db.refresh(plan)
+    return PlanOut.model_validate(plan)
+
+
+@router.patch("/{plan_id}/habits", response_model=PlanOut)
+def patch_habits(
+    plan_id: int,
+    req: HabitsPatchRequest,
+    db: Session = Depends(get_db),
+):
+    """整组替换 daily_habits"""
+    plan = db.query(LearningPlan).filter(LearningPlan.id == plan_id).first()
+    if not plan:
+        raise HTTPException(404, "plan 不存在")
+    plan.daily_habits = [h.model_dump() for h in req.habits]
+    db.commit()
+    db.refresh(plan)
+    return PlanOut.model_validate(plan)
+
+
+@router.patch("/{plan_id}/principles", response_model=PlanOut)
+def patch_principles(
+    plan_id: int,
+    req: PrinciplesPatchRequest,
+    db: Session = Depends(get_db),
+):
+    """整组替换 task_principles"""
+    plan = db.query(LearningPlan).filter(LearningPlan.id == plan_id).first()
+    if not plan:
+        raise HTTPException(404, "plan 不存在")
+    plan.task_principles = [p.strip() for p in req.principles if p.strip()]
+    db.commit()
+    db.refresh(plan)
     return PlanOut.model_validate(plan)

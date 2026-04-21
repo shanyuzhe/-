@@ -148,6 +148,24 @@ export interface PlanImportRequest {
   source_ai?: string
 }
 
+// ============ Plan 在线编辑(v0.3 S1)============
+
+export interface PhasePatchRequest {
+  name?: string
+  start_date?: string
+  end_date?: string
+  focus_modules?: Module[]
+  objectives?: string
+}
+
+export interface HabitsPatchRequest {
+  habits: DailyHabit[]
+}
+
+export interface PrinciplesPatchRequest {
+  principles: string[]
+}
+
 export interface PlanImportResponse {
   plan_id: number
   extracted: ExtractedPlan

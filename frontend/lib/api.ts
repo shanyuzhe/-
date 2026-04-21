@@ -4,10 +4,13 @@
 import type {
   FeedbackRequest,
   FeedbackResponse,
+  HabitsPatchRequest,
+  PhasePatchRequest,
   PlanImportRequest,
   PlanImportResponse,
   PlanOut,
   PlanTemplateResponse,
+  PrinciplesPatchRequest,
   ProgressFullResponse,
   ProgressResponse,
   TodayResponse,
@@ -76,4 +79,23 @@ export const api = {
     request<PlanOut>(`/plan/${id}/activate`, { method: "POST" }),
 
   planActive: () => request<PlanOut | null>("/plan/active"),
+
+  // v0.3 S1: Plan 在线编辑
+  planPatchPhase: (planId: number, index: number, body: PhasePatchRequest) =>
+    request<PlanOut>(`/plan/${planId}/phase/${index}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  planPatchHabits: (planId: number, body: HabitsPatchRequest) =>
+    request<PlanOut>(`/plan/${planId}/habits`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  planPatchPrinciples: (planId: number, body: PrinciplesPatchRequest) =>
+    request<PlanOut>(`/plan/${planId}/principles`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
 }

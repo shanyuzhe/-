@@ -61,13 +61,16 @@
 每阶段:
 - 阶段名 + 起止日期(`YYYY-MM-DD`)
 - 核心目标(可量化)
-- **重点模块**(按我的学科自定义英文命名):
-  - 雅思:`listening` / `speaking` / `reading` / `writing`
-  - Python:`algorithm` / `system_design` / `debugging` / `testing`
-  - 考研英语:`vocab` / `grammar` / `reading` / `translation` / `writing`
-  - 日语:`grammar` / `kanji` / `listening` / `speaking`
-  - CFA:`ethics` / `quant` / `financial_reporting` / `equity`
-  - **其他学科你自己选合适的英文命名**,不要强套雅思四模块
+- **重点模块**(2-6 字**中文**标签,粒度由你判断,越具体越好):
+  - 雅思粗粒度:听力 / 口语 / 阅读 / 写作
+  - 雅思细粒度:听力词汇 / 听力技巧 / 写作逻辑 / 写作连贯 / 口语流利度 / 语音纠正 ...
+  - Python:算法 / 系统设计 / 调试 / 测试
+  - 考研英语:词汇 / 语法 / 阅读 / 翻译 / 写作
+  - 日语:语法 / 汉字 / 听力 / 口语
+  - CFA:职业伦理 / 数量 / 财报 / 权益
+  - 🚨 **必须用中文**,禁止英文下划线命名:
+    - ❌ `phonetics_correction` / `listening_vocab` / `writing_logic`
+    - ✅ 语音纠正 / 听力词汇 / 写作逻辑
 
 #### Section B:资源推荐(**web search 验证真实**)
 - 分模块,每类 3-5 个

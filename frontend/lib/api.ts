@@ -5,6 +5,7 @@ import type {
   FeedbackRequest,
   FeedbackResponse,
   HabitsPatchRequest,
+  LoginRequest,
   PhasePatchRequest,
   PlanImportRequest,
   PlanImportResponse,
@@ -13,7 +14,10 @@ import type {
   PrinciplesPatchRequest,
   ProgressFullResponse,
   ProgressResponse,
+  RegisterRequest,
   TodayResponse,
+  TokenResponse,
+  UserInfo,
 } from "./types"
 
 /**
@@ -27,14 +31,39 @@ const API_BASE =
     ? process.env.NEXT_PUBLIC_API_BASE ?? "http://127.0.0.1:8000"
     : "/api/proxy"
 
-async function request<T>(path: string, init?: RequestInit): Promise<T> {
+/**
+ * 读 token:server 走 next/headers cookies(),client 走 document.cookie。
+ * Dynamic import 保证 client bundle 不引入 server-only 模块。
+ */
+async function getToken(): Promise<string | null> {
+  if (typeof window !== "undefined") {
+    const { getClientToken } = await import("./auth-client")
+    return getClientToken()
+  }
+  const { getServerToken } = await import("./auth-server")
+  return getServerToken()
+}
+
+/**
+ * 某些端点不需要 auth(register / login),用 skipAuth 跳过 token 读取。
+ */
+async function request<T>(
+  path: string,
+  init?: RequestInit & { skipAuth?: boolean }
+): Promise<T> {
+  const { skipAuth, ...rest } = init ?? {}
+  const baseHeaders: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...((rest.headers as Record<string, string>) ?? {}),
+  }
+  if (!skipAuth) {
+    const token = await getToken()
+    if (token) baseHeaders["Authorization"] = `Bearer ${token}`
+  }
   const res = await fetch(`${API_BASE}${path}`, {
-    ...init,
+    ...rest,
     cache: "no-store",
-    headers: {
-      "Content-Type": "application/json",
-      ...(init?.headers ?? {}),
-    },
+    headers: baseHeaders,
   })
   if (!res.ok) {
     const body = await res.text().catch(() => "")
@@ -44,6 +73,23 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 }
 
 export const api = {
+  // v0.4 Auth(这两个 skipAuth:注册/登录时没 token)
+  register: (body: RegisterRequest) =>
+    request<TokenResponse>("/auth/register", {
+      method: "POST",
+      body: JSON.stringify(body),
+      skipAuth: true,
+    }),
+
+  login: (body: LoginRequest) =>
+    request<TokenResponse>("/auth/login", {
+      method: "POST",
+      body: JSON.stringify(body),
+      skipAuth: true,
+    }),
+
+  me: () => request<UserInfo>("/auth/me"),
+
   today: (forceRefresh = false) =>
     request<TodayResponse>(
       `/today${forceRefresh ? "?force_refresh=true" : ""}`

@@ -1,8 +1,10 @@
 import Link from "next/link"
+import { redirect } from "next/navigation"
 import { Check, Sparkles } from "lucide-react"
 import { api } from "@/lib/api"
 import { TaskCard } from "@/components/TaskCard"
 import { RefreshTasksButton } from "@/components/RefreshTasksButton"
+import LogoutButton from "@/components/LogoutButton"
 import { Badge } from "@/components/ui/badge"
 import { Separator } from "@/components/ui/separator"
 import type { Module, PlanOut, TodayResponse } from "@/lib/types"
@@ -28,6 +30,11 @@ export default async function TodayPage() {
   try {
     data = await api.today()
   } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    // 新用户:未创建 goal / 未导入规划 → 引导去 onboarding
+    if (msg.includes("400") && (msg.includes("onboarding") || msg.includes("goal") || msg.includes("规划"))) {
+      redirect("/onboarding")
+    }
     return (
       <main className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="font-serif text-3xl font-medium">无法连接后端</h1>
@@ -37,9 +44,7 @@ export default async function TodayPage() {
             cd backend && uvicorn app.main:app --reload
           </code>
         </p>
-        <p className="text-xs text-muted-foreground mt-4">
-          {e instanceof Error ? e.message : String(e)}
-        </p>
+        <p className="text-xs text-muted-foreground mt-4">{msg}</p>
       </main>
     )
   }
@@ -81,6 +86,7 @@ export default async function TodayPage() {
             >
               进度
             </Link>
+            <LogoutButton />
           </nav>
         </div>
 

@@ -3,6 +3,34 @@
  * 后端字段变更时同步改这个文件。
  */
 
+// ============ Auth(v0.4)============
+
+export interface RegisterRequest {
+  username: string
+  password: string
+  invitation_code: string
+}
+
+export interface LoginRequest {
+  username: string
+  password: string
+}
+
+export interface TokenResponse {
+  access_token: string
+  token_type: "bearer"
+  user_id: number
+  username: string
+}
+
+export interface UserInfo {
+  id: number
+  username: string
+  exam_date: string | null
+  daily_hours: number
+  has_plan: boolean
+}
+
 // module 不再限定雅思四模块,允许任意学科字符串
 // MODULE_LABEL 映射常见中文名,未知 module 直接显示原文
 export type Module = string

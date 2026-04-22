@@ -13,7 +13,7 @@ from app.routers import auth, feedback, plan, progress, today  # noqa: E402
 
 app = FastAPI(
     title="CCO — 决策外包学习助手",
-    description="雅思备考认知执行官(v0.1 Plus:支持外部 AI 规划导入)",
+    description="学习认知执行官(CCO)— 决策外包助手,支持外部 AI 规划导入",
     version="0.1.1",
 )
 

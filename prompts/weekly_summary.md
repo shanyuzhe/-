@@ -8,7 +8,7 @@
 
 <user_profile>
 考试日期:{exam_date}(距今 {days_left} 天)
-目标:雅思 {target_score}
+目标分数/水平:{target_score}
 当前阶段:{phase_name},重点 {phase_focus}
 弱点排序:{weakness_rank}
 </user_profile>

@@ -175,8 +175,11 @@ def generate_today_tasks(context: dict) -> GeneratedTasksList:
         template = template.split("## USER 模板", 1)[1]
 
     system_prompt = (
-        "你是用户的雅思备考认知执行官(CCO)。"
-        "职责:决定今天该做什么,不教学。严格 JSON 输出,不要寒暄。"
+        "你是用户的认知执行官(CCO)。职责:决定今天该做什么,不教学。"
+        "**最重要规则**:若 <today_request> 里有非'(无)'的临时要求,必须完全执行 —— "
+        "用户说'跳过 X'就不生成任何 X 相关任务(哪怕规划里有 X habit),"
+        "用户说'只做 Y'就全部 Y,不按做等于失败。"
+        "严格 JSON 输出,不要寒暄。"
     )
     try:
         user_prompt = template.format(**context)
@@ -215,7 +218,7 @@ def generate_weekly_summary(context: dict) -> WeeklySummaryLLM:
         template = template.split("## USER 模板", 1)[1]
 
     system_prompt = (
-        "你是用户的雅思备考 CCO。本周结束,总结状态并给下周建议。"
+        "你是用户的学习认知执行官(CCO)。本周结束,总结状态并给下周建议。"
         "严格 JSON 输出,基于真实数据,不编造。"
     )
     try:

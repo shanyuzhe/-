@@ -35,6 +35,11 @@ def get_today(
     force_refresh: bool = Query(
         False, description="重新调 LLM 生成(默认当日缓存)"
     ),
+    note: str = Query(
+        "",
+        max_length=500,
+        description="用户给本次生成的临时要求(仅 force_refresh 时生效)",
+    ),
     user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -44,6 +49,7 @@ def get_today(
       - 同一天首次调用 → 调 LLM 生成并存 task 表
       - 同一天后续调用 → 返回已存的任务(不再调 LLM)
       - force_refresh=True → 删除当天所有 pending 任务,重新生成
+      - note 仅在 force_refresh=True 时生效,注入到 prompt <today_request>
     """
     today = date.today()
     goal = db.query(Goal).filter(Goal.user_id == user.id).first()
@@ -90,7 +96,9 @@ def get_today(
             ).delete()
             db.commit()
 
-        context = _build_today_context(db, user, goal, phase, today)
+        # 用户临时注入的要求(仅 force_refresh 时传入)
+        user_note = note.strip() if force_refresh else ""
+        context = _build_today_context(db, user, goal, phase, today, user_note)
         generated = generate_today_tasks(context)
 
         new_tasks: list[Task] = []
@@ -117,6 +125,7 @@ def get_today(
                     "count": len(new_tasks),
                     "force_refresh": force_refresh,
                     "phase": phase.name,
+                    "user_note": user_note or None,
                 },
             )
         )
@@ -145,7 +154,12 @@ def get_today(
 
 
 def _build_today_context(
-    db: Session, user: User, goal: Goal, phase: Phase, today: date
+    db: Session,
+    user: User,
+    goal: Goal,
+    phase: Phase,
+    today: date,
+    user_note: str = "",
 ) -> dict:
     """装配喂给 LLM 的上下文(含 v0.1 Plus plan_context)"""
     seven_days_ago = today - timedelta(days=7)
@@ -250,6 +264,7 @@ def _build_today_context(
         "now_slot": now_slot,
         "today_hours": user.daily_hours,
         "plan_context": plan_context,
+        "user_note": user_note or "(无)",
     }
 
 

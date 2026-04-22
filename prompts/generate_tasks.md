@@ -47,6 +47,11 @@
 {plan_context}
 </learning_plan>
 
+<today_request>
+用户本次刷新的临时要求:{user_note}
+(若为"(无)"表示无额外要求,按规划正常出任务)
+</today_request>
+
 请生成今日 3-5 张任务卡。
 
 **重要**:若 `<learning_plan>` 里有"任务生成必须遵守的原则"和"每天必须包含的习惯",**必须严格执行**,这是用户与 AI 共创的个性化要求,优先级高于默认规则。若包含"当前阶段推荐资源",任务的 `description` 里**优先引用这些具体资源**(例如 "顾家北听力 ep5"、"墨墨背单词 50 个")。
@@ -73,7 +78,13 @@
    - **跳过型**(skipped):**低启动版本**(10-20 分钟即可,只做 50% 也算赢),降低心理门槛
    - `rationale_brief` 必须明确指出是针对哪条历史记录(如 "昨天高数 feeling=2,今天半量巩固概念")
 8. 只输出 JSON,不要任何额外文字或 markdown 代码块包裹
-9. **输出语言(硬规则)**:`title` / `description` / `rationale_brief` 必须是**自然流畅的中文**,面向终端用户阅读:
+9. **用户临时要求优先级(硬规则)**:若 `<today_request>` 里有非"(无)"的内容,**必须体现用户的要求**:
+   - 用户说"跳过口语,手疼" → 今日不生成口语任务
+   - 用户说"今天多做听力" → 提高听力任务数量或时长占比
+   - 用户说"只复盘错题,别加新内容" → 只生成复盘任务,不引入新知识点
+   - `rationale_brief` 里要呼应用户的要求,让用户看到 AI 听到了
+   - 优先级:用户临时要求 > habit 默认 > 任务原则
+10. **输出语言(硬规则)**:`title` / `description` / `rationale_brief` 必须是**自然流畅的中文**,面向终端用户阅读:
    - ❌ 禁止引用 prompt 里的 XML tag 名:如 `learning_plan` / `user_profile` / `current_phase` / `last_7_days`
    - ❌ 禁止出现英文术语:如 `habit` / `module` / `listening` / `speaking` / `focus_modules`
    - ❌ 不要说"遵循 learning_plan 的 habit 要求",要说"按规划里的每日习惯"或"按下午听力训练计划"

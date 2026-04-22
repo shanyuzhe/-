@@ -92,10 +92,13 @@ export const api = {
 
   me: () => request<UserInfo>("/auth/me"),
 
-  today: (forceRefresh = false) =>
-    request<TodayResponse>(
-      `/today${forceRefresh ? "?force_refresh=true" : ""}`
-    ),
+  today: (forceRefresh = false, note = "") => {
+    const params = new URLSearchParams()
+    if (forceRefresh) params.set("force_refresh", "true")
+    if (note) params.set("note", note)
+    const qs = params.toString()
+    return request<TodayResponse>(`/today${qs ? `?${qs}` : ""}`)
+  },
 
   feedback: (body: FeedbackRequest) =>
     request<FeedbackResponse>("/feedback", {

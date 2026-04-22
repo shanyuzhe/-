@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowLeft, RotateCw, Sparkles } from "lucide-react"
+import { ArrowLeft, Lightbulb, RotateCw, Sparkles } from "lucide-react"
 import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -57,6 +57,7 @@ export default async function PlanPage() {
         <NoPlan />
       ) : (
         <>
+          <TipsCard />
           <PlanOverview plan={plan} />
           <Separator className="my-10" />
           <PlanDetail plan={plan} />
@@ -65,6 +66,32 @@ export default async function PlanPage() {
     </main>
   )
 }
+
+// ============ Tips(告诉用户 AI 读这页)============
+
+function TipsCard() {
+  return (
+    <div className="mb-8 rounded-xl border border-primary/30 bg-primary/5 p-5">
+      <div className="flex gap-3 items-start">
+        <Lightbulb
+          className="w-5 h-5 text-primary shrink-0 mt-0.5"
+          strokeWidth={1.75}
+        />
+        <div className="space-y-1.5">
+          <p className="font-serif text-base font-medium text-foreground">
+            AI 基于这一页给你出任务
+          </p>
+          <p className="text-sm text-foreground/75 leading-relaxed">
+            每天的任务由 AI 读取这页的
+            <strong className="text-foreground"> 每日时长、阶段目标、任务原则、每日习惯、资源推荐 </strong>
+            生成。发现不合适?随时改 —— 下次打开首页点"重新生成",AI 会用新内容重算。
+          </p>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 
 // ============ Header ============
 

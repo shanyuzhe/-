@@ -162,12 +162,30 @@ def _build_today_context(
     user_note: str = "",
 ) -> dict:
     """装配喂给 LLM 的上下文(含 v0.1 Plus plan_context)"""
+    # 先查 active plan,用它的激活日给下游 recent / overall 统计做下限
+    # 避免切新 plan 后 V3 被旧 plan 的 task 诱导生成跨学科任务
+    plan = (
+        db.query(LearningPlan)
+        .filter(
+            LearningPlan.user_id == user.id,
+            LearningPlan.status == "active",
+        )
+        .order_by(LearningPlan.activated_at.desc().nullslast())
+        .first()
+    )
+    plan_activated_date: date | None = (
+        plan.activated_at.date() if plan and plan.activated_at else None
+    )
+
     seven_days_ago = today - timedelta(days=7)
+    recent_since = seven_days_ago
+    if plan_activated_date and plan_activated_date > recent_since:
+        recent_since = plan_activated_date
     recent = (
         db.query(Task)
         .filter(
             Task.user_id == user.id,
-            Task.date >= seven_days_ago,
+            Task.date >= recent_since,
             Task.date < today,
         )
         .order_by(Task.date.desc(), Task.seq)
@@ -195,18 +213,17 @@ def _build_today_context(
     ) or 0
 
     # v0.4 规则 5 动态调量:计算 overall 和 recent_7d 完成率
+    # overall 也从 plan 激活日起算,避免切 plan 后旧 plan 完成率混入
+    overall_since = plan_activated_date
+    overall_filter = [Task.user_id == user.id, Task.date < today]
+    if overall_since:
+        overall_filter.append(Task.date >= overall_since)
     all_tasks_count = (
-        db.query(func.count(Task.id))
-        .filter(Task.user_id == user.id, Task.date < today)
-        .scalar()
+        db.query(func.count(Task.id)).filter(*overall_filter).scalar()
     ) or 0
     all_done_count = (
         db.query(func.count(Task.id))
-        .filter(
-            Task.user_id == user.id,
-            Task.date < today,
-            Task.status == "done",
-        )
+        .filter(*overall_filter, Task.status == "done")
         .scalar()
     ) or 0
     overall_rate_pct = (
@@ -226,16 +243,7 @@ def _build_today_context(
     else:
         now_slot = "晚上"
 
-    # v0.1 Plus: 读 active learning plan,装成 plan_context
-    plan = (
-        db.query(LearningPlan)
-        .filter(
-            LearningPlan.user_id == user.id,
-            LearningPlan.status == "active",
-        )
-        .order_by(LearningPlan.activated_at.desc().nullslast())
-        .first()
-    )
+    # v0.1 Plus: 读 active learning plan,装成 plan_context(复用顶部查到的 plan)
     plan_context = (
         _format_plan_context(plan, phase, today)
         if plan

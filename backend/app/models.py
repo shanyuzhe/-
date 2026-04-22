@@ -169,6 +169,8 @@ class LearningPlan(Base):
     source_ai: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
     # LLM 从原文抽到的每日可投入小时(激活时同步到 user.daily_hours)
     daily_hours: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
+    # v0.4 Phase C:弱点排序(激活时同步到 user.weakness_rank,V3 规则 3 依赖)
+    weakness_rank: Mapped[list] = mapped_column(JSON, default=list)
 
     # 5 个 Section 存为 JSON
     phases_data: Mapped[list] = mapped_column(JSON, default=list)

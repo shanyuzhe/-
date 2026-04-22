@@ -60,6 +60,12 @@ def import_plan(
     """粘贴外部 AI 规划 → DeepSeek-R1 extraction → 存为 draft"""
     extracted = extract_learning_plan(req.raw_text)
 
+    # 兜底 weakness_rank:若 LLM 抽空,用阶段一 focus_modules 前 4 项
+    # V3 经常不听 prompt 规则 10 的推断指令,这里硬兜底保证数据可用
+    weakness_rank = list(extracted.weakness_rank)
+    if not weakness_rank and extracted.phases:
+        weakness_rank = list(extracted.phases[0].focus_modules[:4])
+
     plan = LearningPlan(
         user_id=user.id,
         subject=extracted.subject,
@@ -67,6 +73,7 @@ def import_plan(
         source_ai=req.source_ai,
         status="draft",
         daily_hours=extracted.daily_hours,
+        weakness_rank=weakness_rank,
         phases_data=[p.model_dump() for p in extracted.phases],
         resources=[r.model_dump() for r in extracted.resources],
         daily_habits=[h.model_dump() for h in extracted.daily_habits],
@@ -76,6 +83,9 @@ def import_plan(
     db.add(plan)
     db.commit()
     db.refresh(plan)
+
+    # 前端预览同步兜底值,不让用户看到空 weakness
+    extracted.weakness_rank = weakness_rank
 
     warnings: list[str] = []
     if not extracted.phases:
@@ -125,6 +135,12 @@ def activate_plan(
     # 这样 V3 生成每日任务时会按 plan 要求的时长排任务量,不再用 seed 默认值
     if plan.daily_hours is not None:
         user.daily_hours = plan.daily_hours
+
+    # v0.4 Phase C:同步弱点排序到 user.weakness_rank
+    # 不覆盖用户已手动设置的(若用户登录后自己改过,激活不该覆盖)
+    # 这里简化:若 plan 有 weakness 就写入(多用户场景下每人一套,不冲突)
+    if plan.weakness_rank:
+        user.weakness_rank = list(plan.weakness_rank)
 
     # 新用户首次激活时,若没有 goal,自动创建(subject + 根据 plan 最后 phase 推断 exam_date)
     goal = db.query(Goal).filter(Goal.user_id == user.id).first()

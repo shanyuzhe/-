@@ -225,9 +225,11 @@ class Checkpoint(BaseModel):
     """自检节点(Section E)"""
 
     date: str
-    type: str  # listening/speaking/reading/writing/mock_exam/vocab
+    type: str  # 听力基础/阅读逻辑/听力单项模考/全真模考/... 自由字符串
     material: Optional[str] = None
     target: Optional[str] = None
+    # v0.4 Phase D:全真模考的目标总分(如 6.5 / 7.0),小 checkpoint 可为 null
+    score_target: Optional[float] = Field(None, ge=0, le=10)
 
 
 class ExtractedPlan(BaseModel):
@@ -237,6 +239,9 @@ class ExtractedPlan(BaseModel):
     # 每日可投入小时数(从原文 "每日可投入 / 每日总计" 等处抽取,取区间中位数)
     # 激活 plan 时会同步到 user.daily_hours,V3 生成任务按这个时长排
     daily_hours: float | None = None
+    # v0.4 Phase C:弱点排序(最弱在前),中文标签
+    # 激活 plan 时同步到 user.weakness_rank,V3 规则 3 "优先修补弱点"依赖它
+    weakness_rank: list[Module] = Field(default_factory=list)
     phases: list[PhaseData] = Field(default_factory=list)
     resources: list[Resource] = Field(default_factory=list)
     daily_habits: list[DailyHabit] = Field(default_factory=list)
@@ -291,6 +296,7 @@ class PlanOut(BaseModel):
     status: str
     source_ai: Optional[str] = None
     daily_hours: Optional[float] = None
+    weakness_rank: list[Module] = Field(default_factory=list)
     phases_data: list
     resources: list
     daily_habits: list

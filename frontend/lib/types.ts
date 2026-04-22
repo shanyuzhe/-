@@ -159,11 +159,13 @@ export interface Checkpoint {
   type: string
   material?: string | null
   target?: string | null
+  score_target?: number | null
 }
 
 export interface ExtractedPlan {
   subject: string
   daily_hours?: number | null
+  weakness_rank: Module[]
   phases: PhaseData[]
   resources: Resource[]
   daily_habits: DailyHabit[]
@@ -210,6 +212,7 @@ export interface PlanOut {
   status: string
   source_ai?: string | null
   daily_hours?: number | null
+  weakness_rank: Module[]
   phases_data: PhaseData[]
   resources: Resource[]
   daily_habits: DailyHabit[]

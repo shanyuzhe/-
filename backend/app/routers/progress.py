@@ -73,10 +73,16 @@ def get_progress(
         phase_progress = min(max(elapsed / total_days, 0.0), 1.0)
 
     # 本周任务(周一为起点)
+    # 有 active plan 时再 clip 到"不早于 plan 激活日",避免切新 plan 后本周统计混旧 task
     week_start = today - timedelta(days=today.weekday())
+    since = week_start
+    if active_plan and active_plan.activated_at:
+        act_date = active_plan.activated_at.date()
+        if act_date > since:
+            since = act_date
     week_tasks = (
         db.query(Task)
-        .filter(Task.user_id == user.id, Task.date >= week_start)
+        .filter(Task.user_id == user.id, Task.date >= since)
         .all()
     )
     done = sum(1 for t in week_tasks if t.status == "done")
@@ -161,9 +167,9 @@ def _aggregate_full(
         db.query(func.min(Task.date)).filter(Task.user_id == user.id).scalar()
     )
 
-    # 选较早的那个作为 since
-    candidates = [d for d in (plan_activated, earliest_task_date) if d is not None]
-    if not candidates:
+    # since 策略:优先 plan_activated(切新 plan 后旧数据不进统计);没 plan 时 fallback 最早 task
+    since: date | None = plan_activated or earliest_task_date
+    if since is None:
         return (
             ProgressFullResponse(
                 overall_completion_rate=0.0,
@@ -171,7 +177,6 @@ def _aggregate_full(
             ),
             None,
         )
-    since = min(candidates)
     days_covered = (today - since).days + 1
 
     tasks = (

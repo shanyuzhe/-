@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowLeft, Target, TrendingUp } from "lucide-react"
+import { ArrowLeft, Lightbulb, Target, TrendingUp } from "lucide-react"
 import { api } from "@/lib/api"
 import { Separator } from "@/components/ui/separator"
 import AssessmentPanel from "@/components/AssessmentPanel"
@@ -186,7 +186,10 @@ export default async function ProgressPage() {
   }
 
   // 把 dict 转成稳定顺序的 entries
-  const moduleEntries = Object.entries(p.module_distribution)
+  // 只保留本周真的有完成时长的 module(占比 > 0),过滤掉一片 0% 的噪声
+  const moduleEntries = Object.entries(p.module_distribution).filter(
+    ([, pct]) => pct > 0
+  )
 
   const hasOverall = full.total_tasks > 0 && full.since_date
   // 找"当前进行中"的第一个 phase(on_track 非 undefined 且 done_tasks>0 或 confidence 存在)
@@ -207,9 +210,29 @@ export default async function ProgressPage() {
         </Link>
       </nav>
 
-      <h1 className="font-serif text-5xl font-medium tracking-tight mb-12">
+      <h1 className="font-serif text-5xl font-medium tracking-tight mb-8">
         进度
       </h1>
+
+      <div className="mb-10 rounded-xl border border-primary/30 bg-primary/5 p-5">
+        <div className="flex gap-3 items-start">
+          <Lightbulb
+            className="w-5 h-5 text-primary shrink-0 mt-0.5"
+            strokeWidth={1.75}
+          />
+          <div className="space-y-1.5">
+            <p className="font-serif text-base font-medium text-foreground">
+              数据源说明
+            </p>
+            <p className="text-sm text-foreground/75 leading-relaxed">
+              完成率、感受、每周轨迹、模块热度
+              <strong className="text-foreground">全部基于你的任务反馈自动聚合</strong>。下方
+              AI 评语是 V3 读最近任务给的一段建议,<strong className="text-foreground">生成后一直保留</strong>;觉得过时了点"重新生成"让
+              V3 再看一次(约 30 秒)。
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div className="space-y-10">
         {/* 总体状态(v0.2 S3)*/}

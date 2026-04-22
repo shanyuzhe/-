@@ -1,5 +1,5 @@
 import Link from "next/link"
-import { ArrowLeft } from "lucide-react"
+import { ArrowLeft, Lightbulb } from "lucide-react"
 
 export const metadata = {
   title: "常见问题 — CCO",
@@ -122,12 +122,32 @@ export default function FaqPage() {
         </Link>
       </nav>
 
-      <header className="mb-12">
+      <header className="mb-8">
         <p className="text-sm text-muted-foreground">FAQ</p>
         <h1 className="font-serif text-5xl font-medium tracking-tight mt-2">
           常见问题
         </h1>
       </header>
+
+      <div className="mb-10 rounded-xl border border-primary/30 bg-primary/5 p-5">
+        <div className="flex gap-3 items-start">
+          <Lightbulb
+            className="w-5 h-5 text-primary shrink-0 mt-0.5"
+            strokeWidth={1.75}
+          />
+          <div className="space-y-1.5">
+            <p className="font-serif text-base font-medium text-foreground">
+              没找到你要的答案?
+            </p>
+            <p className="text-sm text-foreground/75 leading-relaxed">
+              这里列的是大家<strong className="text-foreground">最常问的</strong>。
+              当前内测阶段,没在下面的问题直接
+              <strong className="text-foreground">联系管理员</strong>
+              (通过邀请码渠道),我们会根据反馈补充条目。
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div className="space-y-10">
         {faqs.map((item, i) => (

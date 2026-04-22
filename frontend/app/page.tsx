@@ -23,6 +23,14 @@ const SOURCE_LABEL: Record<string, string> = {
   doubao: "豆包",
 }
 
+// "2026-04-22" → "4月22日 周二"
+function formatDateLabel(iso: string): string {
+  const d = new Date(`${iso}T00:00:00`)
+  if (isNaN(d.getTime())) return iso
+  const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"]
+  return `${d.getMonth() + 1}月${d.getDate()}日 ${weekdays[d.getDay()]}`
+}
+
 export default async function TodayPage() {
   let data: TodayResponse
   let plan: PlanOut | null = null
@@ -63,17 +71,21 @@ export default async function TodayPage() {
     <main className="mx-auto max-w-3xl px-6 py-12">
       {/* Header */}
       <header className="mb-8">
-        <div className="flex items-start justify-between">
-          <div>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
             <p className="text-sm text-muted-foreground">
               {data.phase_name} · 距考试 {data.days_to_exam} 天
             </p>
-            <h1 className="font-serif text-5xl font-medium tracking-tight mt-2">
-              今天
-            </h1>
+            <div className="flex items-baseline gap-3 flex-wrap mt-2">
+              <h1 className="font-serif text-5xl font-medium tracking-tight">
+                今天
+              </h1>
+              <span className="text-sm text-muted-foreground tabular-nums">
+                {formatDateLabel(data.date)}
+              </span>
+            </div>
           </div>
           <nav className="flex gap-1 items-center flex-wrap justify-end">
-            <RefreshTasksButton />
             <Link
               href="/plan"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5"
@@ -102,6 +114,11 @@ export default async function TodayPage() {
           </nav>
         </div>
 
+        {/* nav 下方独立一行:精美 pill 按钮 */}
+        <div className="mt-4 flex justify-end">
+          <RefreshTasksButton />
+        </div>
+
         <div className="mt-6 flex items-center gap-4 flex-wrap">
           <p className="text-sm text-muted-foreground tabular-nums">
             {done}/{total} · {Math.round(data.completion_rate * 100)}%
@@ -111,7 +128,7 @@ export default async function TodayPage() {
             <span className="text-xs text-muted-foreground">本期重点</span>
             {data.phase_focus.map((m) => (
               <Badge key={m} variant="secondary" className="font-normal">
-                {MODULE_LABEL[m]}
+                {MODULE_LABEL[m] ?? m}
               </Badge>
             ))}
           </div>

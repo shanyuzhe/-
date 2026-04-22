@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react"
 import { useRouter } from "next/navigation"
-import { Loader2, RefreshCw, Sparkles } from "lucide-react"
+import { Loader2, Sparkles } from "lucide-react"
 import { toast } from "sonner"
 
 import { Button } from "@/components/ui/button"
@@ -80,41 +80,25 @@ export function RefreshTasksButton() {
 
   return (
     <>
-      {/* 顶部 nav 里的小图标(移动端主入口)*/}
-      <Button
-        variant="ghost"
-        size="sm"
-        onClick={() => setOpen(true)}
-        disabled={loading}
-        aria-label="重新生成今日任务"
-      >
-        <RefreshCw
-          className={cn("w-4 h-4", loading && "animate-spin")}
-          strokeWidth={1.75}
-        />
-      </Button>
-
-      {/* 大屏右侧浮动胶囊按钮(lg 以上才显示,醒目的 CTA)*/}
+      {/* 单一精美 pill 按钮(嵌在 header 里,nav 下方)*/}
       <button
         onClick={() => setOpen(true)}
         disabled={loading}
         className={cn(
-          "hidden lg:flex fixed right-6 top-1/2 -translate-y-1/2 z-40",
-          "flex-col items-center gap-2 px-5 py-6 rounded-2xl",
-          "bg-primary text-primary-foreground shadow-sm",
+          "inline-flex items-center gap-1.5 px-4 py-2 rounded-full",
+          "bg-primary text-primary-foreground text-sm font-medium shadow-sm",
           "hover:shadow-md hover:scale-[1.02] active:scale-[0.98]",
           "transition-all duration-200",
           "disabled:opacity-60 disabled:cursor-not-allowed"
         )}
         aria-label="重新生成今日任务"
       >
-        <Sparkles
-          className={cn("w-6 h-6", loading && "animate-pulse")}
-          strokeWidth={1.75}
-        />
-        <span className="text-xs font-medium writing-vertical [writing-mode:vertical-rl] tracking-widest">
-          重新生成
-        </span>
+        {loading ? (
+          <Loader2 className="w-4 h-4 animate-spin" strokeWidth={1.75} />
+        ) : (
+          <Sparkles className="w-4 h-4" strokeWidth={1.75} />
+        )}
+        重新生成今日任务
       </button>
 
       <Dialog

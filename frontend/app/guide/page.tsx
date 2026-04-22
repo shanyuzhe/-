@@ -8,6 +8,7 @@ import {
   CheckCheck,
   Calendar,
   LineChart,
+  Lightbulb,
 } from "lucide-react"
 
 export const metadata = {
@@ -28,7 +29,7 @@ export default function GuidePage() {
         </Link>
       </nav>
 
-      <header className="mb-12">
+      <header className="mb-10">
         <p className="text-sm text-muted-foreground">User Guide</p>
         <h1 className="font-serif text-5xl font-medium tracking-tight mt-2">
           5 分钟上手
@@ -39,6 +40,29 @@ export default function GuidePage() {
           <strong className="text-foreground">减少"今天学什么"的心智负担</strong>。
         </p>
       </header>
+
+      <div className="mb-10 rounded-xl border border-primary/30 bg-primary/5 p-5">
+        <div className="flex gap-3 items-start">
+          <Lightbulb
+            className="w-5 h-5 text-primary shrink-0 mt-0.5"
+            strokeWidth={1.75}
+          />
+          <div className="space-y-1.5">
+            <p className="font-serif text-base font-medium text-foreground">
+              跟一遍就够
+            </p>
+            <p className="text-sm text-foreground/75 leading-relaxed">
+              这是一次性上手指南,<strong className="text-foreground">跟做完一次就懂了</strong>。
+              熟练后直接用,遇到新问题回来查对应 Step 即可;
+              更多疑问看{" "}
+              <Link href="/faq" className="text-primary hover:underline underline-offset-2">
+                FAQ
+              </Link>
+              。
+            </p>
+          </div>
+        </div>
+      </div>
 
       <div className="space-y-14">
         <Step

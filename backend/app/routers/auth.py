@@ -105,4 +105,5 @@ def me(user: User = Depends(get_current_user), db: Session = Depends(get_db)):
         exam_date=user.exam_date,
         daily_hours=user.daily_hours,
         has_plan=has_plan,
+        is_admin=user.is_admin,
     )

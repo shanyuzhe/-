@@ -15,6 +15,7 @@ from typing import Optional
 
 from sqlalchemy import (
     JSON,
+    Boolean,
     CheckConstraint,
     Date,
     DateTime,
@@ -23,6 +24,7 @@ from sqlalchemy import (
     Integer,
     String,
     Text,
+    text,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
@@ -40,6 +42,10 @@ class User(Base):
         String(50), unique=True, index=True, nullable=True
     )
     password_hash: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
+    # v0.5:管理员标记(手动 SQL 设 true;访问 /admin/* 必需)
+    is_admin: Mapped[bool] = mapped_column(
+        Boolean, default=False, server_default=text("0"), nullable=False
+    )
     # v0.4:新用户激活后 exam_date 先为 null,进 onboarding 时填
     exam_date: Mapped[Optional[date]] = mapped_column(Date, nullable=True)
     daily_hours: Mapped[float] = mapped_column(Float, default=7.0)

@@ -68,8 +68,27 @@ class UserInfoResponse(BaseModel):
     exam_date: Optional[date] = None
     daily_hours: float = 7.0
     has_plan: bool = False
+    is_admin: bool = False
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# =====================================================
+# v0.5:邀请码管理(admin 专用)
+# =====================================================
+
+class InvitationOut(BaseModel):
+    code: str
+    status: str  # unused / used
+    note: Optional[str] = None
+    used_by_username: Optional[str] = None
+    used_at: Optional[datetime] = None
+    created_at: datetime
+
+
+class InvitationCreateRequest(BaseModel):
+    count: int = Field(..., ge=1, le=20)
+    note: Optional[str] = Field(None, max_length=100)
 
 
 class WeeklySummaryLLM(BaseModel):

@@ -29,6 +29,23 @@ export interface UserInfo {
   exam_date: string | null
   daily_hours: number
   has_plan: boolean
+  is_admin: boolean
+}
+
+// ============ Admin (v0.5)============
+
+export interface Invitation {
+  code: string
+  status: "unused" | "used"
+  note: string | null
+  used_by_username: string | null
+  used_at: string | null
+  created_at: string
+}
+
+export interface InvitationCreateRequest {
+  count: number
+  note?: string
 }
 
 // module 不再限定雅思四模块,允许任意学科字符串

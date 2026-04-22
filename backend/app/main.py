@@ -9,7 +9,7 @@ from fastapi import FastAPI  # noqa: E402
 from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 
 from app.config import settings  # noqa: E402
-from app.routers import auth, feedback, plan, progress, today  # noqa: E402
+from app.routers import admin, auth, feedback, plan, progress, today  # noqa: E402
 
 app = FastAPI(
     title="CCO — 决策外包学习助手",
@@ -30,6 +30,7 @@ app.include_router(today.router)
 app.include_router(feedback.router)
 app.include_router(progress.router)
 app.include_router(plan.router)
+app.include_router(admin.router)
 
 
 @app.get("/")

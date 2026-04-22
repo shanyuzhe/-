@@ -38,6 +38,14 @@ export default async function TodayPage() {
   let data: TodayResponse
   let plan: PlanOut | null = null
 
+  // 拿当前用户(为了判断是否 admin 显示邀请码链接)— 失败不阻塞
+  let me: Awaited<ReturnType<typeof api.me>> | null = null
+  try {
+    me = await api.me()
+  } catch {
+    me = null
+  }
+
   try {
     data = await api.today()
   } catch (e) {
@@ -113,6 +121,14 @@ export default async function TodayPage() {
             >
               FAQ
             </Link>
+            {me?.is_admin && (
+              <Link
+                href="/admin/invitations"
+                className="text-sm text-primary hover:underline transition-colors px-3 py-1.5"
+              >
+                邀请码
+              </Link>
+            )}
             <LogoutButton />
           </nav>
         </div>

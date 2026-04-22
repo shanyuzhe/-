@@ -6,6 +6,8 @@ import type {
   FeedbackRequest,
   FeedbackResponse,
   HabitsPatchRequest,
+  Invitation,
+  InvitationCreateRequest,
   LoginRequest,
   PhasePatchRequest,
   PlanImportRequest,
@@ -159,6 +161,15 @@ export const api = {
   planPatchDailyHours: (planId: number, body: DailyHoursPatchRequest) =>
     request<PlanOut>(`/plan/${planId}/daily-hours`, {
       method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  // v0.5 Admin
+  adminListInvitations: () => request<Invitation[]>("/admin/invitations"),
+
+  adminCreateInvitations: (body: InvitationCreateRequest) =>
+    request<Invitation[]>("/admin/invitations", {
+      method: "POST",
       body: JSON.stringify(body),
     }),
 }

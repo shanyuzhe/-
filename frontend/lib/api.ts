@@ -16,6 +16,7 @@ import type {
   ProgressFullResponse,
   ProgressResponse,
   RegisterRequest,
+  ResourcesPatchRequest,
   TodayResponse,
   TokenResponse,
   UserInfo,
@@ -136,6 +137,12 @@ export const api = {
 
   planPatchHabits: (planId: number, body: HabitsPatchRequest) =>
     request<PlanOut>(`/plan/${planId}/habits`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  planPatchResources: (planId: number, body: ResourcesPatchRequest) =>
+    request<PlanOut>(`/plan/${planId}/resources`, {
       method: "PATCH",
       body: JSON.stringify(body),
     }),

@@ -192,6 +192,10 @@ export interface HabitsPatchRequest {
   habits: DailyHabit[]
 }
 
+export interface ResourcesPatchRequest {
+  resources: Resource[]
+}
+
 export interface PrinciplesPatchRequest {
   principles: string[]
 }

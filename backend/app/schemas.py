@@ -265,6 +265,12 @@ class HabitsPatchRequest(BaseModel):
     habits: list[DailyHabit]
 
 
+class ResourcesPatchRequest(BaseModel):
+    """整组替换 resources"""
+
+    resources: list[Resource]
+
+
 class PrinciplesPatchRequest(BaseModel):
     """整组替换 task_principles(list[str])"""
 

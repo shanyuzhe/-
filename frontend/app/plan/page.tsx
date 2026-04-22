@@ -1,10 +1,5 @@
 import Link from "next/link"
-import {
-  ArrowLeft,
-  ExternalLink,
-  RotateCw,
-  Sparkles,
-} from "lucide-react"
+import { ArrowLeft, RotateCw, Sparkles } from "lucide-react"
 import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -14,6 +9,7 @@ import { cn } from "@/lib/utils"
 import PhaseEditor from "@/components/PhaseEditor"
 import HabitsEditor from "@/components/HabitsEditor"
 import PrinciplesEditor from "@/components/PrinciplesEditor"
+import ResourcesEditor from "@/components/ResourcesEditor"
 import DailyHoursEditor from "@/components/DailyHoursEditor"
 import type { PlanOut } from "@/lib/types"
 
@@ -156,44 +152,7 @@ function PlanDetail({ plan }: { plan: PlanOut }) {
       <Separator />
 
       <Section title="资源推荐" count={plan.resources.length}>
-        <div className="space-y-3">
-          {plan.resources.map((r, i) => (
-            <Card key={i}>
-              <CardContent className="pt-6 space-y-2">
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-medium">{r.name}</h3>
-                  <div className="flex gap-1.5 shrink-0">
-                    <Badge variant="secondary" className="text-xs font-normal">
-                      {r.type}
-                    </Badge>
-                    {r.phase && (
-                      <Badge variant="outline" className="text-xs font-normal">
-                        {r.phase}
-                      </Badge>
-                    )}
-                  </div>
-                </div>
-                {r.why && (
-                  <p className="text-sm text-muted-foreground">{r.why}</p>
-                )}
-                {r.url && (
-                  <a
-                    href={r.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-primary hover:underline break-all"
-                  >
-                    {r.url}
-                    <ExternalLink
-                      className="w-3 h-3 shrink-0"
-                      strokeWidth={1.75}
-                    />
-                  </a>
-                )}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <ResourcesEditor planId={plan.id} resources={plan.resources} />
       </Section>
 
       <Separator />

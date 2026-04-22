@@ -26,6 +26,7 @@ from app.schemas import (
     PlanOut,
     PlanTemplateResponse,
     PrinciplesPatchRequest,
+    ResourcesPatchRequest,
 )
 
 router = APIRouter(prefix="/plan", tags=["plan"])
@@ -381,6 +382,27 @@ def patch_daily_hours(
     plan.daily_hours = req.daily_hours
     if plan.status == "active":
         user.daily_hours = req.daily_hours
+    db.commit()
+    db.refresh(plan)
+    return PlanOut.model_validate(plan)
+
+
+@router.patch("/{plan_id}/resources", response_model=PlanOut)
+def patch_resources(
+    plan_id: int,
+    req: ResourcesPatchRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """整组替换 resources(用户自己发现的资源也能加进来)"""
+    plan = (
+        db.query(LearningPlan)
+        .filter(LearningPlan.id == plan_id, LearningPlan.user_id == user.id)
+        .first()
+    )
+    if not plan:
+        raise HTTPException(404, "plan 不存在")
+    plan.resources = [r.model_dump() for r in req.resources]
     db.commit()
     db.refresh(plan)
     return PlanOut.model_validate(plan)

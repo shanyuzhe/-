@@ -194,16 +194,21 @@ export default function OnboardingPage() {
                   </ol>
                   <div className="flex gap-1.5 flex-wrap items-center pt-1">
                     <span className="text-xs text-muted-foreground">
-                      适用学科:
+                      适用场景:
                     </span>
                     {[
                       "雅思",
                       "GRE",
-                      "考研英语",
-                      "Python",
-                      "日语 N2",
+                      "考研",
                       "CFA",
-                      "司考",
+                      "驾考",
+                      "前端转岗",
+                      "SQL 进阶",
+                      "数据分析",
+                      "日语 N2",
+                      "商务英语",
+                      "演讲训练",
+                      "面试准备",
                     ].map((s) => (
                       <Badge
                         key={s}

@@ -1,0 +1,19 @@
+[Unit]
+Description=CCO frontend (Next.js)
+After=network.target cco-backend.service
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/srv/cco/frontend
+Environment=PORT=3000
+Environment=NODE_ENV=production
+Environment=NO_PROXY=127.0.0.1,localhost,::1
+ExecStart=/usr/bin/npx next start -p 3000
+Restart=on-failure
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

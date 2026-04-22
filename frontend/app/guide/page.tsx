@@ -45,7 +45,7 @@ export default function GuidePage() {
           index={1}
           icon={<KeyRound className="w-5 h-5" strokeWidth={1.75} />}
           title="拿到邀请码并注册"
-          image="step-1-register.png"
+          image="step-1.png"
           alt="注册页面"
         >
           <p>
@@ -71,7 +71,7 @@ export default function GuidePage() {
           index={2}
           icon={<FileText className="w-5 h-5" strokeWidth={1.75} />}
           title="和外部 AI 聊出你的学习规划"
-          image="step-2-chat-with-ai.png"
+          image="step-2.png"
           alt="和 Claude/Kimi 聊规划"
         >
           <p>
@@ -91,7 +91,7 @@ export default function GuidePage() {
           index={3}
           icon={<Sparkles className="w-5 h-5" strokeWidth={1.75} />}
           title="把 AI 规划粘回 CCO,等 90 秒提取"
-          image="step-3-import-plan.png"
+          image="step-3.png"
           alt="导入规划"
         >
           <p>
@@ -107,7 +107,7 @@ export default function GuidePage() {
           index={4}
           icon={<CheckCheck className="w-5 h-5" strokeWidth={1.75} />}
           title="采纳激活,CCO 进入工作状态"
-          image="step-4-activate.png"
+          image="step-4.png"
           alt="采纳激活"
         >
           <p>
@@ -128,7 +128,7 @@ export default function GuidePage() {
           index={5}
           icon={<Calendar className="w-5 h-5" strokeWidth={1.75} />}
           title="每天做任务 + 反馈"
-          image="step-5-today-tasks.png"
+          image="step-5.png"
           alt="今日任务"
         >
           <p>
@@ -165,7 +165,7 @@ export default function GuidePage() {
           index={6}
           icon={<LineChart className="w-5 h-5" strokeWidth={1.75} />}
           title="看进度 + AI 评语"
-          image="step-6-progress.png"
+          image="step-6.png"
           alt="进度页"
         >
           <p>

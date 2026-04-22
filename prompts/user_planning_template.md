@@ -74,8 +74,9 @@
 
 #### Section B:资源推荐(**web search 验证真实**)
 - 分模块,每类 3-5 个
-- `名称` + `URL` + `类型`(`video_course`/`app`/`book`/`website`/`podcast`/`tool`/`other`) + `推荐理由` + `建议阶段`
-- 🚨 **绝不编造**
+- `名称` + `URL` + `类型`(**中文**,从以下选:视频课 / App / 书籍 / 网站 / 播客 / 工具 / 服务 / 其他) + `推荐理由` + `建议阶段`
+- 🚨 **类型必须中文**,禁止 `book`/`website`/`app` 英文值
+- 🚨 **绝不编造**(URL 和名称都必须是 web search 验证过的真实资源)
 
 #### Section C:每日固定 habit(表格)
 

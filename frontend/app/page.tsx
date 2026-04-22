@@ -54,6 +54,10 @@ export default async function TodayPage() {
     if (msg.includes("400") && (msg.includes("onboarding") || msg.includes("goal") || msg.includes("规划"))) {
       redirect("/onboarding")
     }
+    // phase 日期不覆盖今天(plan 过期 / 未开始 / 中间空档)→ 引导去 /plan 编辑 end_date
+    if (msg.includes("404") && msg.includes("phase")) {
+      redirect("/plan")
+    }
     return (
       <main className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="font-serif text-3xl font-medium">无法连接后端</h1>

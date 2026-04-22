@@ -7,7 +7,7 @@
   GET  /plan/active       → 前端查当前 active plan
   GET  /plan/{id}         → 查某个 plan
 """
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -62,6 +62,46 @@ def import_plan(
     """粘贴外部 AI 规划 → DeepSeek-R1 extraction → 存为 draft"""
     extracted = extract_learning_plan(req.raw_text)
 
+    warnings: list[str] = []
+
+    # 时间轴对齐:AI 常给"下周一开始"或算错考试日期,phase 不覆盖 today 就会让
+    # /today 炸 404。这里把整条时间轴平移到以 today 为 phase_1 起点,总时长不变
+    valid_phases = [
+        p for p in extracted.phases
+        if _is_valid_date(p.start_date) and _is_valid_date(p.end_date)
+    ]
+    if valid_phases:
+        valid_phases.sort(key=lambda p: date.fromisoformat(p.start_date))
+        first_start = date.fromisoformat(valid_phases[0].start_date)
+        last_end = max(date.fromisoformat(p.end_date) for p in valid_phases)
+        today = date.today()
+
+        if last_end < today:
+            raise HTTPException(
+                422,
+                f"AI 生成的规划已过期(最后阶段 {last_end} 结束,今天 {today})。"
+                f"请让 AI 按当前日期重新生成",
+            )
+
+        offset = (today - first_start).days
+        if offset != 0:
+            for p in extracted.phases:
+                if _is_valid_date(p.start_date) and _is_valid_date(p.end_date):
+                    p.start_date = (
+                        date.fromisoformat(p.start_date) + timedelta(days=offset)
+                    ).isoformat()
+                    p.end_date = (
+                        date.fromisoformat(p.end_date) + timedelta(days=offset)
+                    ).isoformat()
+            if offset > 0:
+                warnings.append(
+                    f"AI 给的开始日期在未来({first_start}),已对齐到今天({today})"
+                )
+            else:
+                warnings.append(
+                    f"AI 给的开始日期已过去({first_start}),已对齐到今天({today})"
+                )
+
     # 兜底 weakness_rank:若 LLM 抽空,用阶段一 focus_modules 前 4 项
     # V3 经常不听 prompt 规则 10 的推断指令,这里硬兜底保证数据可用
     weakness_rank = list(extracted.weakness_rank)
@@ -89,7 +129,6 @@ def import_plan(
     # 前端预览同步兜底值,不让用户看到空 weakness
     extracted.weakness_rank = weakness_rank
 
-    warnings: list[str] = []
     if not extracted.phases:
         warnings.append("未解析到阶段划分(Section A),原文可能不符合模板")
     if not extracted.resources:

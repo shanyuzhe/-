@@ -71,9 +71,9 @@ export default async function TodayPage() {
     <main className="mx-auto max-w-3xl px-6 py-12">
       {/* Header */}
       <header className="mb-8">
-        <div className="flex items-start justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
-            <p className="text-sm text-muted-foreground">
+            <p className="text-sm text-muted-foreground leading-tight">
               {data.phase_name} · 距考试 {data.days_to_exam} 天
             </p>
             <div className="flex items-baseline gap-3 flex-wrap mt-2">
@@ -85,7 +85,7 @@ export default async function TodayPage() {
               </span>
             </div>
           </div>
-          <nav className="flex gap-1 items-center flex-wrap justify-end">
+          <nav className="flex gap-1 items-center flex-wrap sm:justify-end">
             <Link
               href="/plan"
               className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5"

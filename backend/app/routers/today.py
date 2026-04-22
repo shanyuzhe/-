@@ -11,9 +11,21 @@ from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.db import get_db
-from app.llm import generate_today_tasks
+from app.llm import _cn_module, generate_today_tasks
 from app.models import Event, Goal, LearningPlan, Phase, Task, User
 from app.schemas import TaskOut, TodayResponse
+
+# 时段英文 → 中文(prefer_slots / now_slot)
+_SLOT_CN = {
+    "morning": "上午",
+    "afternoon": "下午",
+    "evening": "晚上",
+    "night": "夜间",
+}
+
+
+def _cn_slot(s: str) -> str:
+    return _SLOT_CN.get(s, s)
 
 router = APIRouter(prefix="/today", tags=["today"])
 
@@ -147,11 +159,14 @@ def _build_today_context(
         .order_by(Task.date.desc(), Task.seq)
         .all()
     )
+    # status 英文 → 中文(避免 V3 在 rationale 里写 "done" "skipped")
+    _STATUS_CN = {"done": "已完成", "skipped": "跳过", "swapped": "换题", "pending": "待办"}
     recent_text = (
         "\n".join(
-            f"{t.date} | {t.module} | {t.title} | {t.status} | "
-            f"feeling={t.feeling or '-'} | "
-            f"{t.actual_minutes or '-'}/{t.estimated_minutes}min"
+            f"{t.date} | {_cn_module(t.module)} | {t.title} | "
+            f"{_STATUS_CN.get(t.status, t.status)} | "
+            f"感受={t.feeling or '-'} | "
+            f"{t.actual_minutes or '-'}/{t.estimated_minutes}分钟"
             for t in recent
         )
         or "暂无"
@@ -167,11 +182,11 @@ def _build_today_context(
 
     hour = datetime.now().hour
     if 6 <= hour < 12:
-        now_slot = "morning"
+        now_slot = "上午"
     elif 12 <= hour < 18:
-        now_slot = "afternoon"
+        now_slot = "下午"
     else:
-        now_slot = "evening"
+        now_slot = "晚上"
 
     # v0.1 Plus: 读 active learning plan,装成 plan_context
     plan = (
@@ -193,14 +208,14 @@ def _build_today_context(
         "exam_date": user.exam_date.isoformat(),
         "days_left": (user.exam_date - today).days,
         "daily_hours": user.daily_hours,
-        "prefer_slots": ", ".join(user.prefer_slots),
-        "weakness_rank": " > ".join(user.weakness_rank),
+        "prefer_slots": ", ".join(_cn_slot(s) for s in user.prefer_slots),
+        "weakness_rank": " > ".join(_cn_module(m) for m in user.weakness_rank),
         "target_score": goal.target_score,
         "current_estimate": goal.current_estimate,
         "phase_name": phase.name,
         "day_in_phase": day_in_phase,
         "phase_total_days": phase_total_days,
-        "phase_focus": ", ".join(phase.focus_modules),
+        "phase_focus": ", ".join(_cn_module(m) for m in phase.focus_modules),
         "phase_target_tasks": phase.target_tasks,
         "phase_done_tasks": phase_done_tasks,
         "recent_tasks_text": recent_text,
@@ -225,7 +240,7 @@ def _format_plan_context(
 
     if plan.daily_habits:
         parts.append("")
-        parts.append("【每天必须包含的 habit】")
+        parts.append("【每天必须包含的习惯】")
         for h in plan.daily_habits:
             tool = h.get("tool") or ""
             amount = h.get("amount") or ""

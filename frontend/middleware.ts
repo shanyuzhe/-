@@ -8,6 +8,9 @@ const PROTECTED_PREFIXES = ["/", "/plan", "/progress", "/onboarding"]
 // 已登录状态下,访问 /login /register 应反向 redirect 回首页
 const AUTH_PAGES = ["/login", "/register"]
 
+// 公开路径(未登录也能访问,不会被 redirect)
+const PUBLIC_PREFIXES = ["/faq", "/guide"]
+
 function isProtected(pathname: string): boolean {
   // API proxy、静态资源、next 内部路由跳过
   if (
@@ -18,6 +21,10 @@ function isProtected(pathname: string): boolean {
     return false
   }
   if (AUTH_PAGES.includes(pathname)) return false
+  // 公开页放行
+  if (PUBLIC_PREFIXES.some((p) => pathname === p || pathname.startsWith(p + "/"))) {
+    return false
+  }
   // 其他都要登录
   return PROTECTED_PREFIXES.some((p) =>
     p === "/" ? pathname === "/" : pathname.startsWith(p)

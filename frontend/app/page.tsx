@@ -72,7 +72,7 @@ export default async function TodayPage() {
               今天
             </h1>
           </div>
-          <nav className="flex gap-1 items-center">
+          <nav className="flex gap-1 items-center flex-wrap justify-end">
             <RefreshTasksButton />
             <Link
               href="/plan"
@@ -85,6 +85,18 @@ export default async function TodayPage() {
               className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5"
             >
               进度
+            </Link>
+            <Link
+              href="/guide"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5"
+            >
+              指南
+            </Link>
+            <Link
+              href="/faq"
+              className="text-sm text-muted-foreground hover:text-foreground transition-colors px-3 py-1.5"
+            >
+              FAQ
             </Link>
             <LogoutButton />
           </nav>

@@ -125,6 +125,16 @@ export default function RegisterPage() {
           </p>
         </CardContent>
       </Card>
+
+      <div className="mt-8 flex justify-center gap-4 text-xs text-muted-foreground">
+        <Link href="/guide" className="hover:text-foreground transition-colors">
+          使用指南
+        </Link>
+        <span className="text-muted-foreground/40">·</span>
+        <Link href="/faq" className="hover:text-foreground transition-colors">
+          常见问题
+        </Link>
+      </div>
     </main>
   )
 }

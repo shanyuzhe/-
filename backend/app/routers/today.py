@@ -233,6 +233,17 @@ def _format_plan_context(
     """把 active plan 格式化成 prompt 里 <learning_plan> 段的内容"""
     parts: list[str] = []
 
+    # 本阶段核心目标(从 phases_data JSON 里找 name 匹配的项读 objectives)
+    current_obj = None
+    for pd in plan.phases_data or []:
+        if pd.get("name") == phase.name and pd.get("objectives"):
+            current_obj = pd["objectives"].strip()
+            break
+    if current_obj:
+        parts.append("【本阶段核心目标】")
+        parts.append(current_obj)
+        parts.append("")
+
     if plan.task_principles:
         parts.append("【任务生成必须遵守的原则】")
         for p in plan.task_principles:
@@ -291,10 +302,45 @@ def _format_plan_context(
     return "\n".join(parts) if parts else "(plan 已激活但各 Section 为空)"
 
 
+import re  # noqa: E402
+
+# "全阶段"同义词 — 出现其中任一即认为匹配所有阶段
+_ALL_PHASE_KEYWORDS = (
+    "all",
+    "any",
+    "全部",
+    "任何",
+    "全程",
+    "全阶段",
+    "贯穿",
+    "整个",
+    "所有阶段",
+    "每个阶段",
+)
+
+
+def _split_phase_tokens(raw: str) -> list[str]:
+    """把 '阶段一、阶段二' / '阶段一,阶段二' / '阶段一 / 阶段二' 拆成 ['阶段一','阶段二']"""
+    # 常见分隔符:中文顿号/逗号/斜杠/英文逗号/空格
+    parts = re.split(r"[、,/,\s]+", raw)
+    return [p.strip() for p in parts if p.strip()]
+
+
 def _resource_matches_phase(resource: dict, phase: Phase) -> bool:
-    """资源是否属于当前阶段(简单启发式)"""
+    """资源是否属于当前阶段。
+
+    匹配规则(依次尝试):
+      1. 空 phase → 全阶段适用
+      2. 含"全阶段/贯穿/全程"等关键词 → 全阶段适用
+      3. 按 "、,/ " 分词,任一 token 和 phase.name 互含 → 匹配
+    """
     rphase = (resource.get("phase") or "").strip()
-    if not rphase or rphase.lower() in ("all", "任何", "全部"):
+    if not rphase:
         return True
-    # 名字互含即认为匹配
-    return rphase in phase.name or phase.name in rphase
+    rlower = rphase.lower()
+    if any(kw in rlower for kw in _ALL_PHASE_KEYWORDS):
+        return True
+    for token in _split_phase_tokens(rphase):
+        if token in phase.name or phase.name in token:
+            return True
+    return False

@@ -11,8 +11,26 @@ function Dialog({ ...props }: DialogPrimitive.Root.Props) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />
 }
 
-function DialogTrigger({ ...props }: DialogPrimitive.Trigger.Props) {
-  return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />
+function DialogTrigger({
+  asChild,
+  children,
+  ...props
+}: DialogPrimitive.Trigger.Props & { asChild?: boolean }) {
+  // 兼容 Radix 时代的 asChild 语法:把 children 当作 render prop 传给 base-ui
+  if (asChild && React.isValidElement(children)) {
+    return (
+      <DialogPrimitive.Trigger
+        data-slot="dialog-trigger"
+        render={children as React.ReactElement}
+        {...props}
+      />
+    )
+  }
+  return (
+    <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props}>
+      {children}
+    </DialogPrimitive.Trigger>
+  )
 }
 
 function DialogPortal({ ...props }: DialogPrimitive.Portal.Props) {

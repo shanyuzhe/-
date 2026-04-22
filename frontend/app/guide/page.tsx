@@ -37,7 +37,12 @@ export default function GuidePage() {
         <p className="text-base text-muted-foreground mt-4 leading-relaxed">
           CCO 是你的<strong className="text-foreground">决策外包助手</strong>——
           让 AI 决定你每天该做什么,你只管执行。不教学,不测评,只帮你
-          <strong className="text-foreground">减少"今天学什么"的心智负担</strong>。
+          <strong className="text-foreground">减少"今天做什么"的心智负担</strong>。
+        </p>
+        <p className="text-sm text-muted-foreground mt-3 leading-relaxed">
+          任何<strong className="text-foreground">有明确目标 + 能拆分成每日动作 + 网上资源充足</strong>的事都适合:
+          备考(雅思 / GRE / 考研 / CFA)、技能转岗(前端 / SQL / 数据分析)、
+          语言训练、工作能力提升(演讲 / 面试准备 / 项目管理)...
         </p>
       </header>
 

@@ -19,7 +19,10 @@ const MODULE_LABEL: Record<Module, string> = {
 const SOURCE_LABEL: Record<string, string> = {
   claude: "Claude",
   chatgpt: "ChatGPT",
+  gemini: "Gemini",
+  deepseek: "DeepSeek",
   kimi: "Kimi",
+  zhipu: "智谱清言",
   doubao: "豆包",
 }
 

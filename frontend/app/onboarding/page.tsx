@@ -31,15 +31,21 @@ const AI_TOOLS = [
     url: "https://claude.ai",
     note: "推荐 · 推理强 + web search",
   },
-  { name: "ChatGPT", url: "https://chatgpt.com", note: "备选" },
+  { name: "ChatGPT", url: "https://chatgpt.com", note: "备选 · 需科学上网" },
+  { name: "Gemini", url: "https://gemini.google.com", note: "推理强 + 免费额度高" },
+  { name: "DeepSeek", url: "https://chat.deepseek.com", note: "国产旗舰 · 中文好" },
   { name: "Kimi", url: "https://kimi.com", note: "国内免费 · 带 web search" },
+  { name: "智谱清言", url: "https://chatglm.cn", note: "国产老牌 · 免费" },
   { name: "豆包", url: "https://www.doubao.com", note: "国内备选" },
 ] as const
 
 const SOURCE_LABEL: Record<string, string> = {
   claude: "Claude",
   chatgpt: "ChatGPT",
+  gemini: "Gemini",
+  deepseek: "DeepSeek",
   kimi: "Kimi",
+  zhipu: "智谱清言",
   doubao: "豆包",
 }
 

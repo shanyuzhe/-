@@ -2,6 +2,7 @@
  * 后端 REST 客户端(对应 backend/app/routers/*)
  */
 import type {
+  DailyHoursPatchRequest,
   FeedbackRequest,
   FeedbackResponse,
   HabitsPatchRequest,
@@ -141,6 +142,12 @@ export const api = {
 
   planPatchPrinciples: (planId: number, body: PrinciplesPatchRequest) =>
     request<PlanOut>(`/plan/${planId}/principles`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  planPatchDailyHours: (planId: number, body: DailyHoursPatchRequest) =>
+    request<PlanOut>(`/plan/${planId}/daily-hours`, {
       method: "PATCH",
       body: JSON.stringify(body),
     }),

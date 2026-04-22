@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils"
 import PhaseEditor from "@/components/PhaseEditor"
 import HabitsEditor from "@/components/HabitsEditor"
 import PrinciplesEditor from "@/components/PrinciplesEditor"
+import DailyHoursEditor from "@/components/DailyHoursEditor"
 import type { PlanOut } from "@/lib/types"
 
 const SOURCE_LABEL: Record<string, string> = {
@@ -310,6 +311,9 @@ function PlanOverview({ plan }: { plan: PlanOut }) {
 
       <Card className="overflow-hidden">
         <CardContent className="pt-6 space-y-6">
+          {/* 每日学习时长(可编辑核心指标)*/}
+          <DailyHoursEditor planId={plan.id} initial={plan.daily_hours} />
+
           {/* 日期范围 */}
           <div className="flex justify-between items-center text-xs text-muted-foreground tabular-nums">
             <span>{phases[0].start_date}</span>

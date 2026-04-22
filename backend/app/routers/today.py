@@ -180,6 +180,30 @@ def _build_today_context(
         .scalar()
     ) or 0
 
+    # v0.4 规则 5 动态调量:计算 overall 和 recent_7d 完成率
+    all_tasks_count = (
+        db.query(func.count(Task.id))
+        .filter(Task.user_id == user.id, Task.date < today)
+        .scalar()
+    ) or 0
+    all_done_count = (
+        db.query(func.count(Task.id))
+        .filter(
+            Task.user_id == user.id,
+            Task.date < today,
+            Task.status == "done",
+        )
+        .scalar()
+    ) or 0
+    overall_rate_pct = (
+        round(all_done_count / all_tasks_count * 100) if all_tasks_count else 0
+    )
+    recent_7d_total = len(recent)
+    recent_7d_done = sum(1 for t in recent if t.status == "done")
+    recent_7d_rate_pct = (
+        round(recent_7d_done / recent_7d_total * 100) if recent_7d_total else 0
+    )
+
     hour = datetime.now().hour
     if 6 <= hour < 12:
         now_slot = "上午"
@@ -219,6 +243,8 @@ def _build_today_context(
         "phase_target_tasks": phase.target_tasks,
         "phase_done_tasks": phase_done_tasks,
         "recent_tasks_text": recent_text,
+        "overall_rate_pct": overall_rate_pct,
+        "recent_7d_rate_pct": recent_7d_rate_pct,
         "last_week_summary_text": "暂无",
         "today": today.isoformat(),
         "now_slot": now_slot,

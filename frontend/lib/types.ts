@@ -196,6 +196,10 @@ export interface PrinciplesPatchRequest {
   principles: string[]
 }
 
+export interface DailyHoursPatchRequest {
+  daily_hours: number
+}
+
 export interface PlanImportResponse {
   plan_id: number
   extracted: ExtractedPlan

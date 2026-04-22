@@ -28,6 +28,11 @@
 {recent_tasks_text}
 </last_7_days>
 
+<progress>
+总体完成率: overall_rate_pct = {overall_rate_pct}
+近 7 天完成率: recent_7d_rate_pct = {recent_7d_rate_pct}
+</progress>
+
 <last_week_summary>
 {last_week_summary_text}
 </last_week_summary>
@@ -48,10 +53,16 @@
 
 规则(严格遵守):
 1. 覆盖今日预期时长的 80%-100%,留 20% 弹性
-2. 每张 10-240 分钟(单块学习最多 4 小时),总和不超过 `{today_hours}` 小时
+2. **total_time 硬上限(最重要约束)**:所有任务 `estimated_minutes` 累加 **必须 ≤ `{today_hours} × 60` 分钟**,单张 10-240 分钟。
+   - 若 `<learning_plan>` 里的 habit 累加时长 **超过** today_hours,**必须按比例压缩每个 habit 的估算时长** —— 不能因为规划里写了"1 小时"就照搬。
+   - `today_hours` 是用户最新调整的硬约束,优先级**高于**历史 habit 时长。
+   - 若无法在 today_hours 内放入所有 habit,优先保留 focus_modules 里的 + 弱点排序靠前的,砍掉低优先级。
 3. 优先修补**近 7 天跳过的任务**和**弱点排序靠前的模块**
 4. 考虑当前时段精力(下午适合输入型如听力阅读,晚上适合输出型如写作口语)
-5. 若用户连续 3 天整体完成率 < 50%,**降量**到 3 张且总时长折半
+5. **按完成率动态调量**(context 里的 `overall_rate_pct` 和 `recent_7d_rate_pct`):
+   - `recent_7d_rate_pct < 40` 或 连续 3 天 < 50% → 砍半(3 张 + 总时长折半)
+   - `recent_7d_rate_pct > 85` 且 `overall_rate_pct > 70` → 允许加 1 张更挑战性的任务
+   - 其他情况按 today_hours 正常出
 6. 不得编造用户状态;若 `last_7_days` 为"暂无",按新手保守节奏
 7. **针对性复盘(硬规则)**:若 `<last_7_days>` 里存在:
    - `feeling ≤ 2` 的已完成任务(用户觉得吃力/挫败),或

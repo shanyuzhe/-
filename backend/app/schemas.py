@@ -271,6 +271,12 @@ class PrinciplesPatchRequest(BaseModel):
     principles: list[str] = Field(..., max_length=20)
 
 
+class DailyHoursPatchRequest(BaseModel):
+    """修改 plan.daily_hours;若是 active plan 同步 user.daily_hours"""
+
+    daily_hours: float = Field(..., ge=0.5, le=24.0)
+
+
 class PlanImportRequest(BaseModel):
     raw_text: str = Field(..., min_length=50, max_length=30000)
     source_ai: Optional[str] = Field(

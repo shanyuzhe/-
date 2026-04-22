@@ -18,6 +18,7 @@ from app.db import get_db
 from app.llm import extract_learning_plan
 from app.models import Goal, LearningPlan, Phase, Task, User
 from app.schemas import (
+    DailyHoursPatchRequest,
     HabitsPatchRequest,
     PhasePatchRequest,
     PlanImportRequest,
@@ -354,6 +355,32 @@ def patch_habits(
     if not plan:
         raise HTTPException(404, "plan 不存在")
     plan.daily_habits = [h.model_dump() for h in req.habits]
+    db.commit()
+    db.refresh(plan)
+    return PlanOut.model_validate(plan)
+
+
+@router.patch("/{plan_id}/daily-hours", response_model=PlanOut)
+def patch_daily_hours(
+    plan_id: int,
+    req: DailyHoursPatchRequest,
+    user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """调整每日学习时长(core 指标)。
+
+    若 plan 是 active,同步到 user.daily_hours,V3 下次生成任务用新值。
+    """
+    plan = (
+        db.query(LearningPlan)
+        .filter(LearningPlan.id == plan_id, LearningPlan.user_id == user.id)
+        .first()
+    )
+    if not plan:
+        raise HTTPException(404, "plan 不存在")
+    plan.daily_hours = req.daily_hours
+    if plan.status == "active":
+        user.daily_hours = req.daily_hours
     db.commit()
     db.refresh(plan)
     return PlanOut.model_validate(plan)
